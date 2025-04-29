@@ -78,8 +78,7 @@
                             </thead>
                             <tbody>
                                 {% for participant in participants %}
-                                <tr class="clickable-row" 
-                                    data-url="{{ url_for('participant_statistics', project_id=project.id, participant_id=participant.id) }}">
+                                <tr class="clickable-row" onclick="location.href='{{ url_for('participant_statistics', project_id=project.id, participant_id=participant.id) }}'">
                                     <td>{{ participant.name }}</td>
                                     <td>{{ participant_totals[participant.id]|round|int }}원</td>
                                     <td>
@@ -148,8 +147,9 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.clickable-row').forEach(row => {
+        row.style.cursor = 'pointer';
         row.addEventListener('click', function() {
-            window.location.href = this.dataset.url;
+            window.location.href = this.getAttribute('data-url');
         });
     });
 });

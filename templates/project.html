@@ -85,7 +85,8 @@
                                 <div class="row">
                                     <div class="col-md-4 mb-3">
                                         <label for="amount" class="form-label">총 금액</label>
-                                        <input type="number" class="form-control" id="amount" name="amount" required step="1000">
+                                        <input type="number" class="form-control" id="amount" name="amount" required 
+                                               data-step="1000" step="any" autocomplete="off">
                                     </div>
                                     <div class="col-md-4 mb-3">
                                         <label for="category" class="form-label">카테고리</label>
@@ -98,7 +99,7 @@
                                     </div>
                                     <div class="col-md-4 mb-3">
                                         <label for="description" class="form-label">설명 (선택사항)</label>
-                                        <input type="text" class="form-control" id="description" name="description">
+                                        <input type="text" class="form-control" id="description" name="description" autocomplete="off">
                                     </div>
                                 </div>
                                 <button type="submit" class="btn btn-primary">추가</button>
@@ -121,7 +122,7 @@
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <label for="description_individual" class="form-label">설명 (선택사항)</label>
-                                        <input type="text" class="form-control" id="description_individual" name="description">
+                                        <input type="text" class="form-control" id="description_individual" name="description" autocomplete="off">
                                     </div>
                                 </div>
                                 
@@ -132,8 +133,9 @@
                                         <span class="input-group-text">{{ participant.name }}</span>
                                         <input type="number" class="form-control individual-amount" 
                                                name="individual_amount_{{ participant.id }}" value="0" required 
-                                               step="any" data-step="1000"
-                                               oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                                               data-step="1000" step="any"
+                                               oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+                                               autocomplete="off">
                                     </div>
                                     {% endfor %}
                                 </div>
@@ -170,7 +172,7 @@
                             </thead>
                             <tbody>
                                 {% for transaction in transactions %}
-                                <tr>
+                                <tr class="clickable-row" data-bs-toggle="modal" data-bs-target="#editTransactionModal{{ transaction.id }}">
                                     <td>{{ transaction.date.strftime('%Y-%m-%d %H:%M') }}</td>
                                     <td>{{ transaction.category }}</td>
                                     <td>{{ transaction.description }}</td>
@@ -191,6 +193,51 @@
             </div>
         </div>
     </div>
+
+    <!-- 거래 수정 모달들 -->
+    {% for transaction in transactions %}
+    <div class="modal fade" id="editTransactionModal{{ transaction.id }}" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">지출 수정</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form action="{{ url_for('edit_transaction', project_id=project.id, transaction_id=transaction.id) }}" method="POST">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="edit_category{{ transaction.id }}" class="form-label">카테고리</label>
+                            <select class="form-select" id="edit_category{{ transaction.id }}" name="category" required>
+                                <option value="식비" {% if transaction.category == '식비' %}selected{% endif %}>식비</option>
+                                <option value="교통비" {% if transaction.category == '교통비' %}selected{% endif %}>교통비</option>
+                                <option value="숙박비" {% if transaction.category == '숙박비' %}selected{% endif %}>숙박비</option>
+                                <option value="기타" {% if transaction.category == '기타' %}selected{% endif %}>기타</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit_description{{ transaction.id }}" class="form-label">설명 (선택사항)</label>
+                            <input type="text" class="form-control" id="edit_description{{ transaction.id }}" 
+                                   name="description" value="{{ transaction.description }}" autocomplete="off">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-danger me-auto" 
+                                onclick="if(confirm('정말 삭제하시겠습니까?')) { document.getElementById('deleteForm{{ transaction.id }}').submit(); }">
+                            삭제
+                        </button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                        <button type="submit" class="btn btn-primary">저장</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <!-- 거래 삭제 폼 -->
+    <form id="deleteForm{{ transaction.id }}" 
+          action="{{ url_for('delete_transaction', project_id=project.id, transaction_id=transaction.id) }}" 
+          method="POST" style="display: none;">
+    </form>
+    {% endfor %}
 </div>
 
 <!-- 참여자 수정 모달 -->
@@ -203,7 +250,7 @@
             </div>
             <form id="editParticipantForm" method="POST">
                 <div class="modal-body">
-                    <input type="text" class="form-control" id="editParticipantName" name="name" required>
+                    <input type="text" class="form-control" id="editParticipantName" name="name" required autocomplete="off">
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
@@ -226,7 +273,7 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label for="project_name" class="form-label">새 프로젝트 이름</label>
-                        <input type="text" class="form-control" id="project_name" name="name" value="{{ project.name }}" required>
+                        <input type="text" class="form-control" id="project_name" name="name" value="{{ project.name }}" required autocomplete="off">
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -302,6 +349,24 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // 총 금액 입력 필드 (균등 분담)
+    const totalAmountInput = document.getElementById('amount');
+    if (totalAmountInput) {
+        totalAmountInput.addEventListener('keydown', function(e) {
+            if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                e.preventDefault();
+                const currentValue = parseInt(this.value) || 0;
+                const step = parseInt(this.dataset.step) || 1000;
+                
+                if (e.key === 'ArrowUp') {
+                    this.value = currentValue + step;
+                } else {
+                    this.value = Math.max(0, currentValue - step);
+                }
+            }
+        });
+    }
+
     // 개별 금액 입력 시 총액 계산
     const individualAmounts = document.querySelectorAll('.individual-amount');
     const totalAmountSpan = document.getElementById('total_amount');

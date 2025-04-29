@@ -312,6 +312,42 @@ def edit_project(project_id):
     flash('프로젝트 이름이 변경되었습니다.')
     return redirect(url_for('project', project_id=project_id))
 
+@app.route('/project/<int:project_id>/transaction/<int:transaction_id>/edit', methods=['POST'])
+def edit_transaction(project_id, transaction_id):
+    transaction = Transaction.query.get_or_404(transaction_id)
+    if transaction.project_id != project_id:
+        flash('잘못된 접근입니다.')
+        return redirect(url_for('project', project_id=project_id))
+    
+    category = request.form.get('category')
+    description = request.form.get('description', '')
+    
+    if not category:
+        flash('카테고리는 필수 입력 항목입니다.')
+        return redirect(url_for('project', project_id=project_id))
+    
+    transaction.category = category
+    transaction.description = description
+    
+    db.session.commit()
+    flash('지출이 수정되었습니다.')
+    return redirect(url_for('project', project_id=project_id))
+
+@app.route('/project/<int:project_id>/transaction/<int:transaction_id>/delete', methods=['POST'])
+def delete_transaction(project_id, transaction_id):
+    transaction = Transaction.query.get_or_404(transaction_id)
+    if transaction.project_id != project_id:
+        flash('잘못된 접근입니다.')
+        return redirect(url_for('project', project_id=project_id))
+    
+    # Share 테이블의 관련 항목도 함께 삭제
+    Share.query.filter_by(transaction_id=transaction_id).delete()
+    db.session.delete(transaction)
+    db.session.commit()
+    
+    flash('지출이 삭제되었습니다.')
+    return redirect(url_for('project', project_id=project_id))
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()

@@ -10,14 +10,14 @@
                     <form action="{{ url_for('create_project') }}" method="POST">
                         <div class="mb-3">
                             <label for="project_name" class="form-label">프로젝트 이름</label>
-                            <input type="text" class="form-control" id="project_name" name="project_name" required>
+                            <input type="text" class="form-control" id="project_name" name="project_name" required autocomplete="off">
                         </div>
                         
                         <div class="mb-3">
                             <label class="form-label">참여자 추가</label>
                             <div id="participants-container">
                                 <div class="input-group mb-2">
-                                    <input type="text" class="form-control participant-name" name="participants[]" placeholder="참여자 이름" required>
+                                    <input type="text" class="form-control participant-name" name="participants[]" placeholder="참여자 이름" required autocomplete="off">
                                     <button type="button" class="btn btn-outline-danger remove-participant">삭제</button>
                                 </div>
                             </div>
@@ -25,13 +25,13 @@
                         </div>
 
                         <div class="mb-3 form-check">
-                            <input type="checkbox" class="form-check-input" id="use_password" name="use_password">
+                            <input type="checkbox" class="form-check-input" id="use_password" name="use_password" autocomplete="off">
                             <label class="form-check-label" for="use_password">비밀번호 설정</label>
                         </div>
                         
                         <div class="mb-3" id="password_field" style="display: none;">
                             <label for="password" class="form-label">비밀번호</label>
-                            <input type="password" class="form-control" id="password" name="password">
+                            <input type="password" class="form-control" id="password" name="password" autocomplete="off">
                         </div>
                         
                         <button type="submit" class="btn btn-primary w-100">프로젝트 생성</button>
@@ -60,7 +60,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const newParticipant = document.createElement('div');
         newParticipant.className = 'input-group mb-2';
         newParticipant.innerHTML = `
-            <input type="text" class="form-control participant-name" name="participants[]" placeholder="참여자 이름" required>
+            <input type="text" class="form-control participant-name" name="participants[]" placeholder="참여자 이름" required autocomplete="off">
             <button type="button" class="btn btn-outline-danger remove-participant">삭제</button>
         `;
         participantsContainer.appendChild(newParticipant);
