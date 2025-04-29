@@ -1,12 +1,18 @@
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
+from flask_wtf.csrf import CSRFProtect
 from datetime import datetime
 import os
+import re
+from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.urandom(24)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:1234@localhost/accountee'
+csrf = CSRFProtect(app)
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', os.urandom(24))
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'mysql://root:1234@localhost/accountee')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SESSION_COOKIE_SECURE'] = True
+app.config['SESSION_COOKIE_HTTPONLY'] = True
 db = SQLAlchemy(app)
 
 # 데이터베이스 모델
@@ -40,6 +46,24 @@ class Share(db.Model):
     transaction_id = db.Column(db.Integer, db.ForeignKey('transaction.id'), nullable=False)
     participant_id = db.Column(db.Integer, db.ForeignKey('participant.id'), nullable=False)
 
+def validate_amount(amount_str):
+    try:
+        amount = float(amount_str)
+        if amount <= 0:
+            return False, "금액은 0보다 커야 합니다."
+        return True, amount
+    except ValueError:
+        return False, "올바른 금액을 입력해주세요."
+
+def validate_name(name):
+    if not name or len(name.strip()) == 0:
+        return False, "이름을 입력해주세요."
+    if len(name) > 50:
+        return False, "이름은 50자 이하여야 합니다."
+    if not re.match(r'^[가-힣a-zA-Z0-9\s]+$', name):
+        return False, "이름은 한글, 영문, 숫자만 사용 가능합니다."
+    return True, name.strip()
+
 @app.route('/', methods=['GET'])
 def index():
     projects = Project.query.order_by(Project.created_at.desc()).all()
@@ -63,7 +87,7 @@ def create_project():
         
         project = Project(
             name=project_name,
-            password=password if use_password else None,
+            password=generate_password_hash(password) if use_password else None,
             use_password=use_password
         )
         db.session.add(project)
@@ -71,7 +95,11 @@ def create_project():
         
         # 참여자 추가
         for name in participants:
-            participant = Participant(name=name, project_id=project.id)
+            is_valid, valid_name = validate_name(name)
+            if not is_valid:
+                flash(valid_name)
+                return redirect(url_for('create_project'))
+            participant = Participant(name=valid_name, project_id=project.id)
             db.session.add(participant)
         db.session.commit()
         
@@ -84,7 +112,7 @@ def project(project_id):
     project = Project.query.get_or_404(project_id)
     
     if project.use_password and request.method == 'POST':
-        if request.form['password'] != project.password:
+        if not check_password_hash(project.password, request.form['password']):
             flash('비밀번호가 일치하지 않습니다.')
             return redirect(url_for('index'))
     
@@ -106,7 +134,12 @@ def project(project_id):
 @app.route('/add_participant/<int:project_id>', methods=['POST'])
 def add_participant(project_id):
     name = request.form['name']
-    participant = Participant(name=name, project_id=project_id)
+    is_valid, result = validate_name(name)
+    if not is_valid:
+        flash(result)
+        return redirect(url_for('project', project_id=project_id))
+    
+    participant = Participant(name=result, project_id=project_id)
     db.session.add(participant)
     db.session.commit()
     flash('참여자가 추가되었습니다!')
@@ -127,7 +160,12 @@ def add_transaction(project_id):
     
     if split_type == 'equal':
         # 균등 분담
-        amount = float(request.form['amount'])
+        amount_str = request.form['amount']
+        is_valid, amount = validate_amount(amount_str)
+        if not is_valid:
+            flash(amount)
+            return redirect(url_for('project', project_id=project_id))
+            
         transaction = Transaction(
             amount=amount,
             description=description,
@@ -150,7 +188,11 @@ def add_transaction(project_id):
         # 개별 분담
         total_amount = 0
         for participant in participants:
-            individual_amount = float(request.form.get(f'individual_amount_{participant.id}', 0))
+            individual_amount_str = request.form.get(f'individual_amount_{participant.id}', '0')
+            is_valid, individual_amount = validate_amount(individual_amount_str)
+            if not is_valid:
+                flash(individual_amount)
+                return redirect(url_for('project', project_id=project_id))
             total_amount += individual_amount
         
         # 개별 분담의 경우 총 금액을 개별 금액의 합으로 설정
@@ -165,7 +207,12 @@ def add_transaction(project_id):
         
         # 개별 분담 처리
         for participant in participants:
-            individual_amount = float(request.form.get(f'individual_amount_{participant.id}', 0))
+            individual_amount_str = request.form.get(f'individual_amount_{participant.id}', '0')
+            is_valid, individual_amount = validate_amount(individual_amount_str)
+            if not is_valid:
+                flash(individual_amount)
+                return redirect(url_for('project', project_id=project_id))
+                
             if individual_amount > 0:
                 share = Share(
                     amount=individual_amount,
@@ -351,4 +398,4 @@ def delete_transaction(project_id, transaction_id):
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-    app.run(host='0.0.0.0', debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=False)
