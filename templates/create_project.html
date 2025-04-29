@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <h2 class="card-title text-center mb-4">새 프로젝트 생성</h2>
+                    <form action="{{ url_for('create_project') }}" method="POST">
+                        <div class="mb-3">
+                            <label for="project_name" class="form-label">프로젝트 이름</label>
+                            <input type="text" class="form-control" id="project_name" name="project_name" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">참여자 추가</label>
+                            <div id="participants-container">
+                                <div class="input-group mb-2">
+                                    <input type="text" class="form-control participant-name" name="participants[]" placeholder="참여자 이름" required>
+                                    <button type="button" class="btn btn-outline-danger remove-participant">삭제</button>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-outline-primary" id="add-participant">참여자 추가</button>
+                        </div>
+
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="use_password" name="use_password">
+                            <label class="form-check-label" for="use_password">비밀번호 설정</label>
+                        </div>
+                        
+                        <div class="mb-3" id="password_field" style="display: none;">
+                            <label for="password" class="form-label">비밀번호</label>
+                            <input type="password" class="form-control" id="password" name="password">
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary w-100">프로젝트 생성</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 비밀번호 필드 토글
+    const usePasswordCheckbox = document.getElementById('use_password');
+    const passwordField = document.getElementById('password_field');
+    
+    usePasswordCheckbox.addEventListener('change', function() {
+        passwordField.style.display = this.checked ? 'block' : 'none';
+    });
+
+    // 참여자 추가/삭제 기능
+    const participantsContainer = document.getElementById('participants-container');
+    const addParticipantBtn = document.getElementById('add-participant');
+
+    addParticipantBtn.addEventListener('click', function() {
+        const newParticipant = document.createElement('div');
+        newParticipant.className = 'input-group mb-2';
+        newParticipant.innerHTML = `
+            <input type="text" class="form-control participant-name" name="participants[]" placeholder="참여자 이름" required>
+            <button type="button" class="btn btn-outline-danger remove-participant">삭제</button>
+        `;
+        participantsContainer.appendChild(newParticipant);
+    });
+
+    // 참여자 삭제 기능
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('remove-participant')) {
+            e.target.parentElement.remove();
+        }
+    });
+});
+</script>
+{% endblock %} 

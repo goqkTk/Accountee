@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12 mb-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <h2>프로젝트 목록</h2>
+            <a href="{{ url_for('create_project') }}" class="btn btn-primary">새 프로젝트 만들기</a>
+        </div>
+    </div>
+
+    {% for project in projects %}
+    <div class="col-md-6 col-lg-4 mb-4">
+        {% if project.use_password %}
+        <div class="card project-card" data-bs-toggle="modal" data-bs-target="#passwordModal{{ project.id }}">
+        {% else %}
+        <a href="{{ url_for('project', project_id=project.id) }}" class="card project-card text-decoration-none">
+        {% endif %}
+            <div class="card-body">
+                <div class="project-title">
+                    <h5 class="card-title mb-0">{{ project.name }}</h5>
+                    {% if project.use_password %}
+                    <i class="bi bi-lock-fill text-muted"></i>
+                    {% endif %}
+                </div>
+                <p class="card-text text-muted mt-2">
+                    생성일: {{ project.created_at.strftime('%Y-%m-%d') }}
+                </p>
+            </div>
+        {% if project.use_password %}
+        </div>
+        {% else %}
+        </a>
+        {% endif %}
+    </div>
+
+    {% if project.use_password %}
+    <!-- 비밀번호 입력 모달 -->
+    <div class="modal fade" id="passwordModal{{ project.id }}" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">{{ project.name }} 비밀번호 입력</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form action="{{ url_for('project', project_id=project.id) }}" method="POST">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="password{{ project.id }}" class="form-label">비밀번호</label>
+                            <input type="password" class="form-control" id="password{{ project.id }}" name="password" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                        <button type="submit" class="btn btn-primary">접속</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    {% endfor %}
+</div>
+
+<script>
+function goToProject(url) {
+    window.location.href = url;
+}
+</script>
+{% endblock %} 
