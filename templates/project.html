@@ -326,6 +326,7 @@
             </div>
             <div class="modal-body">
                 <p>정말로 "{{ project.name }}" 프로젝트를 삭제하시겠습니까?</p>
+                <p class="text-danger">이 작업은 되돌릴 수 없습니다.</p>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
@@ -389,7 +390,7 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label for="password" class="form-label">비밀번호</label>
-                        <input type="password" class="form-control" id="password" name="password" required autocomplete="new-password">
+                        <input type="password" class="form-control" id="password" name="password" required autocomplete="off">
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -411,7 +412,6 @@
             </div>
             <div class="modal-body">
                 <p>정말로 "{{ project.name }}" 프로젝트의 비밀번호를 해제하시겠습니까?</p>
-                <p class="text-warning">이 작업은 되돌릴 수 없습니다.</p>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
