@@ -8,20 +8,23 @@
                 <div class="card-body">
                     <h2 class="card-title text-center mb-4">새 프로젝트 생성</h2>
                     <form action="{{ url_for('create_project') }}" method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <div class="mb-3">
                             <label for="project_name" class="form-label">프로젝트 이름</label>
                             <input type="text" class="form-control" id="project_name" name="project_name" required autocomplete="off">
                         </div>
                         
                         <div class="mb-3">
-                            <label class="form-label">참여자 추가</label>
+                            <label class="form-label">인원 추가</label>
                             <div id="participants-container">
                                 <div class="input-group mb-2">
-                                    <input type="text" class="form-control participant-name" name="participants[]" placeholder="참여자 이름" required autocomplete="off">
-                                    <button type="button" class="btn btn-outline-danger remove-participant">삭제</button>
+                                    <input type="text" class="form-control participant-name" name="participants[]" placeholder="이름" required autocomplete="off">
+                                    <button type="button" class="btn btn-outline-danger remove-participant">
+                                        <span>삭제</span>
+                                    </button>
                                 </div>
                             </div>
-                            <button type="button" class="btn btn-outline-primary" id="add-participant">참여자 추가</button>
+                            <button type="button" class="btn btn-outline-primary" id="add-participant">인원 추가</button>
                         </div>
 
                         <div class="mb-3 form-check">
@@ -60,18 +63,40 @@ document.addEventListener('DOMContentLoaded', function() {
         const newParticipant = document.createElement('div');
         newParticipant.className = 'input-group mb-2';
         newParticipant.innerHTML = `
-            <input type="text" class="form-control participant-name" name="participants[]" placeholder="참여자 이름" required autocomplete="off">
-            <button type="button" class="btn btn-outline-danger remove-participant">삭제</button>
+            <input type="text" class="form-control participant-name" name="participants[]" placeholder="이름" required autocomplete="off">
+            <button type="button" class="btn btn-outline-danger remove-participant">
+                <span>삭제</span>
+            </button>
         `;
         participantsContainer.appendChild(newParticipant);
     });
 
     // 참여자 삭제 기능
     document.addEventListener('click', function(e) {
-        if (e.target.classList.contains('remove-participant')) {
-            e.target.parentElement.remove();
+        if (e.target.classList.contains('remove-participant') || e.target.closest('.remove-participant')) {
+            const button = e.target.classList.contains('remove-participant') ? e.target : e.target.closest('.remove-participant');
+            button.parentElement.remove();
         }
     });
 });
 </script>
+
+<style>
+@media (max-width: 768px) {
+    .participant-name {
+        flex: 1;
+        min-width: 0;
+    }
+    
+    .remove-participant {
+        padding: 0.375rem 0.5rem;
+        font-size: 0.875rem;
+    }
+    
+    .input-group {
+        flex-wrap: nowrap;
+        gap: 0;
+    }
+}
+</style>
 {% endblock %} 
