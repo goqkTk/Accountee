@@ -18,7 +18,9 @@
                             <div id="participants-container">
                                 <div class="input-group mb-2">
                                     <input type="text" class="form-control participant-name" name="participants[]" placeholder="이름" required autocomplete="off">
-                                    <button type="button" class="btn btn-outline-danger remove-participant">삭제</button>
+                                    <button type="button" class="btn btn-outline-danger remove-participant" style="min-width: 40px;">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
                                 </div>
                             </div>
                             <button type="button" class="btn btn-outline-primary" id="add-participant">인원 추가</button>
@@ -61,7 +63,9 @@ document.addEventListener('DOMContentLoaded', function() {
         newParticipant.className = 'input-group mb-2';
         newParticipant.innerHTML = `
             <input type="text" class="form-control participant-name" name="participants[]" placeholder="참여자 이름" required autocomplete="off">
-            <button type="button" class="btn btn-outline-danger remove-participant">삭제</button>
+            <button type="button" class="btn btn-outline-danger remove-participant" style="min-width: 40px;">
+                <i class="bi bi-trash"></i>
+            </button>
         `;
         participantsContainer.appendChild(newParticipant);
     });
