@@ -248,8 +248,13 @@ def add_transaction(project_id):
     flash('거래가 성공적으로 추가되었습니다!')
     return redirect(url_for('project', encrypted_id=encrypt_id(project_id)))
 
-@app.route('/statistics/<int:project_id>')
-def statistics(project_id):
+@app.route('/statistics/<encrypted_id>')
+def statistics(encrypted_id):
+    project_id = decrypt_id(encrypted_id)
+    if not project_id:
+        flash('잘못된 접근입니다.')
+        return redirect(url_for('index'))
+    
     project = Project.query.get_or_404(project_id)
     participants = Participant.query.filter_by(project_id=project_id).all()
     
@@ -278,14 +283,19 @@ def statistics(project_id):
                          category_totals=category_totals,
                          total_amount=total_amount)
 
-@app.route('/statistics/<int:project_id>/participant/<int:participant_id>')
-def participant_statistics(project_id, participant_id):
+@app.route('/statistics/<encrypted_id>/participant/<int:participant_id>')
+def participant_statistics(encrypted_id, participant_id):
+    project_id = decrypt_id(encrypted_id)
+    if not project_id:
+        flash('잘못된 접근입니다.')
+        return redirect(url_for('index'))
+    
     project = Project.query.get_or_404(project_id)
     participant = Participant.query.get_or_404(participant_id)
     
     if participant.project_id != project_id:
         flash('잘못된 접근입니다.')
-        return redirect(url_for('statistics', project_id=project_id))
+        return redirect(url_for('statistics', encrypted_id=encrypted_id))
     
     # 해당 참여자의 지출이 포함된 거래 목록
     transactions = Transaction.query.join(Share).filter(
