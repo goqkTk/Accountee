@@ -2,9 +2,13 @@ from flask import Flask, render_template, request, redirect, url_for, flash, ses
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timedelta
 import os
+from dotenv import load_dotenv
 import re
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_wtf.csrf import CSRFProtect
+
+# 환경 변수 로드
+load_dotenv()
 
 app = Flask(__name__)
 
