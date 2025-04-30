@@ -1,13 +1,11 @@
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
-from flask_wtf.csrf import CSRFProtect
 from datetime import datetime
 import os
 import re
 from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
-csrf = CSRFProtect(app)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', os.urandom(24))
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'mysql+pymysql://root:1234@localhost/accountee')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
