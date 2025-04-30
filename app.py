@@ -1,16 +1,35 @@
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, session
 from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
+from dotenv import load_dotenv
 import re
 from werkzeug.security import generate_password_hash, check_password_hash
+from flask_wtf.csrf import CSRFProtect
+
+# 환경 변수 로드
+load_dotenv()
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', os.urandom(24))
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'mysql+pymysql://root:1234@localhost/accountee')
+
+# 보안 설정
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
+if not app.config['SECRET_KEY']:
+    raise ValueError("SECRET_KEY 환경 변수가 설정되지 않았습니다.")
+
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
+if not app.config['SQLALCHEMY_DATABASE_URI']:
+    raise ValueError("DATABASE_URL 환경 변수가 설정되지 않았습니다.")
+
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SESSION_COOKIE_SECURE'] = True
 app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=1)
+
+# CSRF 보호 활성화
+csrf = CSRFProtect(app)
+
 db = SQLAlchemy(app)
 
 # 데이터베이스 모델
@@ -49,6 +68,8 @@ def validate_amount(amount_str):
         amount = float(amount_str)
         if amount <= 0:
             return False, "금액은 0보다 커야 합니다."
+        if amount > 1000000000:  # 10억 제한
+            return False, "금액이 너무 큽니다."
         return True, amount
     except ValueError:
         return False, "올바른 금액을 입력해주세요."
@@ -60,6 +81,9 @@ def validate_name(name):
         return False, "이름은 50자 이하여야 합니다."
     if not re.match(r'^[가-힣a-zA-Z0-9\s]+$', name):
         return False, "이름은 한글, 영문, 숫자만 사용 가능합니다."
+    # SQL 인젝션 방지를 위한 추가 검증
+    if any(char in name for char in [';', "'", '"', '--', '/*', '*/']):
+        return False, "잘못된 문자가 포함되어 있습니다."
     return True, name.strip()
 
 @app.route('/', methods=['GET'])
@@ -416,6 +440,11 @@ def delete_transaction(project_id, transaction_id):
     
     flash('지출이 삭제되었습니다.')
     return redirect(url_for('project', project_id=project_id))
+
+@app.errorhandler(Exception)
+def handle_error(error):
+    app.logger.error(f"An error occurred: {error}")
+    return render_template('error.html', message="죄송합니다. 오류가 발생했습니다."), 500
 
 if __name__ == '__main__':
     with app.app_context():
