@@ -74,10 +74,16 @@
             display: flex;
             align-items: center;
             gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .project-title h2 {
+            margin: 0;
+            word-break: break-word;
         }
 
         .project-actions {
-            margin-left: auto;
+            margin-top: 0.5rem;
         }
 
         .action-buttons {
@@ -89,9 +95,8 @@
         /* 프로젝트 상단 버튼 스타일 */
         .project-header {
             display: flex;
-            flex-wrap: wrap;
+            flex-direction: column;
             gap: 0.5rem;
-            align-items: center;
             margin-bottom: 1rem;
         }
 
@@ -106,7 +111,6 @@
             }
 
             .project-actions {
-                margin-left: 0;
                 width: 100%;
             }
 
@@ -115,9 +119,8 @@
                 font-size: 0.875rem;
             }
 
-            .project-title {
-                font-size: 1.25rem;
-                margin-bottom: 0.5rem;
+            .project-title h2 {
+                font-size: 1.5rem;
             }
         }
 
@@ -166,11 +169,17 @@
 
         @media (max-width: 768px) {
             .participant-form {
-                flex-direction: column;
+                flex-direction: row;
+            }
+
+            .participant-form .form-control {
+                width: auto;
+                flex: 1;
             }
 
             .participant-form .btn {
-                width: 100%;
+                width: auto;
+                padding: 0.375rem 0.75rem;
             }
 
             .participant-item {
