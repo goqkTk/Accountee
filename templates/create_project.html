@@ -18,13 +18,13 @@
                             <label class="form-label">인원 추가</label>
                             <div id="participants-container">
                                 <div class="input-group mb-2">
-                                    <input type="text" class="form-control participant-name" name="participants[]" placeholder="이름" required autocomplete="off">
-                                    <button type="button" class="btn btn-outline-danger remove-participant">
+                                    <input type="text" class="form-control participant-name" name="participants[]" placeholder="이름" required autocomplete="off" style="flex: 1;">
+                                    <button type="button" class="btn btn-outline-danger remove-participant" style="width: 60px;" onmouseup="this.blur()">
                                         <span>삭제</span>
                                     </button>
                                 </div>
                             </div>
-                            <button type="button" class="btn btn-outline-primary" id="add-participant">인원 추가</button>
+                            <button type="button" class="btn btn-outline-primary" id="add-participant" onmouseup="this.blur()">인원 추가</button>
                         </div>
 
                         <div class="mb-3 form-check">
@@ -37,7 +37,7 @@
                             <input type="password" class="form-control" id="password" name="password" autocomplete="off">
                         </div>
                         
-                        <button type="submit" class="btn btn-primary w-100">프로젝트 생성</button>
+                        <button type="submit" class="btn btn-primary w-100" onmouseup="this.blur()">프로젝트 생성</button>
                     </form>
                 </div>
             </div>
@@ -47,6 +47,9 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // CSRF 토큰 가져오기
+    const csrfToken = document.querySelector('input[name="csrf_token"]').value;
+
     // 비밀번호 필드 토글
     const usePasswordCheckbox = document.getElementById('use_password');
     const passwordField = document.getElementById('password_field');
@@ -63,8 +66,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const newParticipant = document.createElement('div');
         newParticipant.className = 'input-group mb-2';
         newParticipant.innerHTML = `
-            <input type="text" class="form-control participant-name" name="participants[]" placeholder="이름" required autocomplete="off">
-            <button type="button" class="btn btn-outline-danger remove-participant">
+            <input type="text" class="form-control participant-name" name="participants[]" placeholder="이름" required autocomplete="off" style="flex: 1;">
+            <input type="hidden" name="csrf_token" value="${csrfToken}">
+            <button type="button" class="btn btn-outline-danger remove-participant" style="width: 60px;" onmouseup="this.blur()">
                 <span>삭제</span>
             </button>
         `;

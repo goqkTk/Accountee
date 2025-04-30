@@ -200,8 +200,10 @@
                     <h5 class="card-title">인원 관리</h5>
                     <form action="{{ url_for('add_participant', project_id=project.id) }}" method="POST" class="participant-form">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <input type="text" class="form-control" name="name" placeholder="이름" required autocomplete="off">
-                        <button type="submit" class="btn btn-primary">추가</button>
+                        <div class="input-group">
+                            <input type="text" class="form-control form-control-lg" name="name" placeholder="이름" required autocomplete="off">
+                            <button type="submit" class="btn btn-primary">추가</button>
+                        </div>
                     </form>
                     <div class="participants-list">
                         {% for participant in participants %}
@@ -215,7 +217,7 @@
                                 <form action="{{ url_for('delete_participant', project_id=project.id, participant_id=participant.id) }}" 
                                       method="POST" class="d-inline">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <button type="submit" class="btn btn-sm btn-outline-danger" 
+                                    <button type="submit" class="btn btn-xs btn-outline-danger" 
                                             onclick="return confirm('정말 삭제하시겠습니까?')">
                                         삭제
                                     </button>
@@ -354,7 +356,7 @@
             </div>
             <div class="modal-body">
                 <p>정말로 정말로 "{{ project.name }}" 프로젝트를 삭제하시겠습니까?</p>
-                <p class="text-danger">모든 거래 내역과 참여자 정보가 영구적으로 삭제됩니다.</p>
+                <p class="text-danger">모든 지출 내역과 인원 정보가 영구적으로 삭제됩니다.</p>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
