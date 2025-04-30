@@ -8,7 +8,6 @@
                 <div class="card-body">
                     <h2 class="card-title text-center mb-4">새 프로젝트 생성</h2>
                     <form action="{{ url_for('create_project') }}" method="POST">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <div class="mb-3">
                             <label for="project_name" class="form-label">프로젝트 이름</label>
                             <input type="text" class="form-control" id="project_name" name="project_name" required autocomplete="off">
@@ -47,9 +46,6 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // CSRF 토큰 가져오기
-    const csrfToken = document.querySelector('input[name="csrf_token"]').value;
-
     // 비밀번호 필드 토글
     const usePasswordCheckbox = document.getElementById('use_password');
     const passwordField = document.getElementById('password_field');
