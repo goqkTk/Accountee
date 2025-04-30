@@ -2,140 +2,376 @@
 
 {% block content %}
 <div class="container">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="project-header">
+                <div class="project-title">
+                    <h2>{{ project.name }}</h2>
+                </div>
+                <div class="d-flex gap-2 mb-3">
+                    <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#editProjectModal">
+                        <i class="bi bi-pencil"></i> 이름 변경
+                    </button>
+                    {% if project.use_password %}
+                    <button type="button" class="btn btn-outline-warning btn-sm" data-bs-toggle="modal" data-bs-target="#removePasswordModal">
+                        <i class="bi bi-unlock"></i> 비밀번호 해제
+                    </button>
+                    {% else %}
+                    <button type="button" class="btn btn-outline-warning btn-sm" data-bs-toggle="modal" data-bs-target="#setPasswordModal">
+                        <i class="bi bi-lock"></i> 비밀번호 설정
+                    </button>
+                    {% endif %}
+                    <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteProjectModal1">
+                        <i class="bi bi-trash"></i> 삭제
+                    </button>
+                </div>
+                <div class="project-actions d-flex gap-2">
+                    <a href="{{ url_for('statistics', project_id=project.id) }}" class="btn btn-outline-info">통계 보기</a>
+                    <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">목록으로</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 지출 추가 폼 -->
+    <div class="row mb-4">
+        <div class="col-12">
             <div class="card">
                 <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h2 class="card-title mb-0">{{ project.name }}</h2>
-                        <div>
-                            <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editProjectModal">
-                                프로젝트 수정
-                            </button>
-                            <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteProjectModal">
-                                프로젝트 삭제
-                            </button>
-                        </div>
-                    </div>
+                    <h5 class="card-title">새 지출 추가</h5>
+                    
+                    <ul class="nav nav-tabs mb-3" id="splitTypeTab" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="equal-tab" data-bs-toggle="tab" 
+                                    data-bs-target="#equal" type="button" role="tab">균등 분담</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="individual-tab" data-bs-toggle="tab" 
+                                    data-bs-target="#individual" type="button" role="tab">개별 분담</button>
+                        </li>
+                    </ul>
 
-                    <!-- 비밀번호 설정/해제 버튼 -->
-                    <div class="mb-4">
-                        {% if project.use_password %}
-                            <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#removePasswordModal">
-                                비밀번호 해제
-                            </button>
-                        {% else %}
-                            <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#setPasswordModal">
-                                비밀번호 설정
-                            </button>
-                        {% endif %}
-                    </div>
-
-                    <!-- 통계 보기 버튼 -->
-                    <div class="mb-4">
-                        <a href="{{ url_for('statistics', encrypted_id=project.encrypted_id) }}" class="btn btn-outline-info">
-                            통계 보기
-                        </a>
-                    </div>
-
-                    <!-- 참여자 목록 -->
-                    <div class="mb-4">
-                        <h4>참여자 목록</h4>
-                        <div class="list-group">
-                            {% for participant in participants %}
-                                <div class="list-group-item">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <span>{{ participant.name }}</span>
-                                        <div>
-                                            <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#editParticipantModal{{ participant.id }}">
-                                                수정
-                                            </button>
-                                            <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteParticipantModal{{ participant.id }}">
-                                                삭제
-                                            </button>
-                                        </div>
+                    <div class="tab-content" id="splitTypeTabContent">
+                        <!-- 균등 분담 탭 -->
+                        <div class="tab-pane fade show active" id="equal" role="tabpanel">
+                            <form action="{{ url_for('add_transaction', project_id=encrypt_path(project.id|string)) }}" method="POST">
+                                <input type="hidden" name="split_type" value="equal">
+                                <div class="row">
+                                    <div class="col-md-4 mb-3">
+                                        <label for="amount" class="form-label">총 금액</label>
+                                        <input type="tel" class="form-control" id="amount" name="amount" required 
+                                               data-step="1000" step="any" pattern="[0-9]*" inputmode="numeric"
+                                               autocomplete="off">
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label for="category" class="form-label">카테고리</label>
+                                        <select class="form-select" id="category" name="category" required>
+                                            <option value="식비">식비</option>
+                                            <option value="교통비">교통비</option>
+                                            <option value="숙박비">숙박비</option>
+                                            <option value="기타">기타</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label for="description" class="form-label">설명 (선택사항)</label>
+                                        <input type="text" class="form-control" id="description" name="description" autocomplete="off">
                                     </div>
                                 </div>
-                            {% endfor %}
+                                <button type="submit" class="btn btn-primary">추가</button>
+                            </form>
                         </div>
-                        <button type="button" class="btn btn-outline-primary mt-2" data-bs-toggle="modal" data-bs-target="#addParticipantModal">
-                            참여자 추가
-                        </button>
-                    </div>
 
-                    <!-- 거래 내역 -->
-                    <div class="mb-4">
-                        <h4>거래 내역</h4>
-                        <div class="list-group">
-                            {% for transaction in transactions %}
-                                <div class="list-group-item">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <div>
-                                            <h6 class="mb-1">{{ transaction.category }}</h6>
-                                            <p class="mb-1">{{ transaction.description }}</p>
-                                            <small class="text-muted">{{ transaction.date.strftime('%Y-%m-%d') }}</small>
-                                        </div>
-                                        <div>
-                                            <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#editTransactionModal{{ transaction.id }}">
-                                                수정
-                                            </button>
-                                            <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteTransactionModal{{ transaction.id }}">
-                                                삭제
-                                            </button>
-                                        </div>
+                        <!-- 개별 분담 탭 -->
+                        <div class="tab-pane fade" id="individual" role="tabpanel">
+                            <form action="{{ url_for('add_transaction', project_id=encrypt_path(project.id|string)) }}" method="POST">
+                                <input type="hidden" name="split_type" value="individual">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="category_individual" class="form-label">카테고리</label>
+                                        <select class="form-select" id="category_individual" name="category" required>
+                                            <option value="식비">식비</option>
+                                            <option value="교통비">교통비</option>
+                                            <option value="숙박비">숙박비</option>
+                                            <option value="기타">기타</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="description_individual" class="form-label">설명 (선택사항)</label>
+                                        <input type="text" class="form-control" id="description_individual" name="description" autocomplete="off">
                                     </div>
                                 </div>
-                            {% endfor %}
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">개별 금액 입력</label>
+                                    {% for participant in participants %}
+                                    <div class="input-group mb-2">
+                                        <span class="input-group-text">{{ participant.name }}</span>
+                                        <input type="tel" class="form-control individual-amount" 
+                                               name="individual_amount_{{ participant.id }}" value="0" required 
+                                               data-step="1000" step="any" pattern="[0-9]*" inputmode="numeric"
+                                               oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+                                               autocomplete="off">
+                                    </div>
+                                    {% endfor %}
+                                </div>
+
+                                <div class="alert alert-info">
+                                    총 금액: <span id="total_amount">0</span>원
+                                </div>
+
+                                <button type="submit" class="btn btn-primary">추가</button>
+                            </form>
                         </div>
-                        <button type="button" class="btn btn-outline-primary mt-2" data-bs-toggle="modal" data-bs-target="#addTransactionModal">
-                            거래 추가
-                        </button>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- 지출 내역 -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">지출 내역</h5>
+                    <div class="table-responsive">
+                        <table class="transaction-table">
+                            <thead>
+                                <tr>
+                                    <th>일시</th>
+                                    <th>카테고리</th>
+                                    <th>설명</th>
+                                    <th>금액</th>
+                                    <th>1인당 분담액</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for transaction in transactions %}
+                                <tr class="clickable-row" data-bs-toggle="modal" data-bs-target="#editTransactionModal{{ transaction.id }}">
+                                    <td>{{ transaction.date.strftime('%Y-%m-%d %H:%M') }}</td>
+                                    <td>{{ transaction.category }}</td>
+                                    <td>{{ transaction.description }}</td>
+                                    <td>{{ "{:,}".format(transaction.amount|round|int) }}원</td>
+                                    <td>
+                                        {% if transaction.shares|length > 0 and transaction.shares[0].amount == transaction.amount / participants|length %}
+                                            {{ "{:,}".format((transaction.amount / participants|length)|round|int) }}원
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                        <div class="transaction-list">
+                            {% for transaction in transactions %}
+                            <div class="transaction-card clickable-row" data-bs-toggle="modal" data-bs-target="#editTransactionModal{{ transaction.id }}">
+                                <div class="date">{{ transaction.date.strftime('%Y-%m-%d %H:%M') }}</div>
+                                <div class="main-info">
+                                    <span class="category">{{ transaction.category }}</span>
+                                    <span class="amount">{{ "{:,}".format(transaction.amount|round|int) }}원</span>
+                                </div>
+                                {% if transaction.description %}
+                                <div class="description">{{ transaction.description }}</div>
+                                {% endif %}
+                                <div class="per-person">
+                                    {% if transaction.shares|length > 0 and transaction.shares[0].amount == transaction.amount / participants|length %}
+                                        1인당 {{ "{:,}".format((transaction.amount / participants|length)|round|int) }}원
+                                    {% else %}
+                                        개별 분담
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 인원 관리 섹션 -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">인원 관리</h5>
+                    <form action="{{ url_for('add_participant', project_id=encrypt_path(project.id|string)) }}" method="POST" class="participant-form">
+                        <input type="text" class="form-control" name="name" placeholder="이름" required autocomplete="off">
+                        <button type="submit" class="btn btn-primary">추가</button>
+                    </form>
+                    <div class="participants-list">
+                        {% for participant in participants %}
+                        <div class="participant-item">
+                            <span class="participant-name">{{ participant.name }}</span>
+                            <div class="action-buttons">
+                                <button type="button" class="btn btn-sm btn-outline-primary edit-participant" 
+                                        data-id="{{ participant.id }}" data-name="{{ participant.name }}">
+                                    수정
+                                </button>
+                                <form action="{{ url_for('delete_participant', project_id=project.id, participant_id=participant.id) }}" 
+                                      method="POST" class="d-inline">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" 
+                                            onclick="return confirm('정말 삭제하시겠습니까?')">
+                                        삭제
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 거래 수정 모달들 -->
+    {% for transaction in transactions %}
+    <div class="modal fade" id="editTransactionModal{{ transaction.id }}" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">지출 수정</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form action="{{ url_for('edit_transaction', project_id=encrypt_path(project.id|string), transaction_id=transaction.id) }}" method="POST">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="edit_category{{ transaction.id }}" class="form-label">카테고리</label>
+                            <select class="form-select" id="edit_category{{ transaction.id }}" name="category" required>
+                                <option value="식비" {% if transaction.category == '식비' %}selected{% endif %}>식비</option>
+                                <option value="교통비" {% if transaction.category == '교통비' %}selected{% endif %}>교통비</option>
+                                <option value="숙박비" {% if transaction.category == '숙박비' %}selected{% endif %}>숙박비</option>
+                                <option value="기타" {% if transaction.category == '기타' %}selected{% endif %}>기타</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit_description{{ transaction.id }}" class="form-label">설명 (선택사항)</label>
+                            <input type="text" class="form-control" id="edit_description{{ transaction.id }}" 
+                                   name="description" value="{{ transaction.description }}" autocomplete="off">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-danger me-auto" 
+                                onclick="if(confirm('정말 삭제하시겠습니까?')) { document.getElementById('deleteForm{{ transaction.id }}').submit(); }">
+                            삭제
+                        </button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                        <button type="submit" class="btn btn-primary">저장</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <!-- 거래 삭제 폼 -->
+    <form id="deleteForm{{ transaction.id }}" 
+          action="{{ url_for('delete_transaction', project_id=encrypt_path(project.id|string), transaction_id=transaction.id) }}" 
+          method="POST" style="display: none;">
+    </form>
+    {% endfor %}
 </div>
 
-<!-- 프로젝트 수정 모달 -->
-<div class="modal fade" id="editProjectModal" tabindex="-1">
+<!-- 참여자 수정 모달 -->
+<div class="modal fade" id="editParticipantModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">프로젝트 수정</h5>
+                <h5 class="modal-title">인원 이름 수정</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form action="{{ url_for('edit_project', encrypted_id=project.encrypted_id) }}" method="POST">
+            <form id="editParticipantForm" method="POST">
                 <div class="modal-body">
-                    <div class="mb-3">
-                        <label for="name" class="form-label">프로젝트 이름</label>
-                        <input type="text" class="form-control" id="name" name="name" value="{{ project.name }}" required>
-                    </div>
+                    <input type="text" class="form-control" id="editParticipantName" name="name" required autocomplete="off">
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
-                    <button type="submit" class="btn btn-primary">수정</button>
+                    <button type="submit" class="btn btn-primary">저장</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
 
-<!-- 프로젝트 삭제 모달 -->
-<div class="modal fade" id="deleteProjectModal" tabindex="-1">
+<!-- 프로젝트 이름 변경 모달 -->
+<div class="modal fade" id="editProjectModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">프로젝트 삭제</h5>
+                <h5 class="modal-title">프로젝트 이름 변경</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{{ url_for('edit_project', project_id=encrypt_path(project.id|string)) }}" method="POST">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="project_name" class="form-label">새 프로젝트 이름</label>
+                        <input type="text" class="form-control" id="project_name" name="name" value="{{ project.name }}" required autocomplete="off">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                    <button type="submit" class="btn btn-primary">변경</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 프로젝트 삭제 모달 1 -->
+<div class="modal fade" id="deleteProjectModal1" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">프로젝트 삭제 확인</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <p>정말로 이 프로젝트를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.</p>
+                <p>정말로 "{{ project.name }}" 프로젝트를 삭제하시겠습니까?</p>
+                <p class="text-danger">이 작업은 되돌릴 수 없습니다.</p>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
-                <form action="{{ url_for('delete_project', encrypted_id=project.encrypted_id) }}" method="POST">
-                    <button type="submit" class="btn btn-danger">삭제</button>
+                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteProjectModal2">삭제</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 프로젝트 삭제 모달 2 -->
+<div class="modal fade" id="deleteProjectModal2" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">프로젝트 삭제 재확인</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>정말로 정말로 "{{ project.name }}" 프로젝트를 삭제하시겠습니까?</p>
+                <p class="text-danger">모든 지출 내역과 인원 정보가 영구적으로 삭제됩니다.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteProjectModal3">삭제</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 프로젝트 삭제 모달 3 -->
+<div class="modal fade" id="deleteProjectModal3" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">프로젝트 삭제 최종 확인</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>진짜진짜진짜 "{{ project.name }}" 프로젝트를 삭제하시겠습니까?</p>
+                <p class="text-danger fw-bold">이 작업은 절대로 되돌릴 수 없습니다!</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                <form action="{{ url_for('delete_project', project_id=encrypt_path(project.id|string)) }}" method="POST">
+                    <button type="submit" class="btn btn-danger">최종 삭제</button>
                 </form>
             </div>
         </div>
@@ -147,14 +383,14 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">비밀번호 설정</h5>
+                <h5 class="modal-title">프로젝트 비밀번호 설정</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form action="{{ url_for('toggle_password', encrypted_id=project.encrypted_id) }}" method="POST">
+            <form action="{{ url_for('toggle_password', project_id=encrypt_path(project.id|string)) }}" method="POST">
                 <div class="modal-body">
                     <div class="mb-3">
                         <label for="password" class="form-label">비밀번호</label>
-                        <input type="password" class="form-control" id="password" name="password" required>
+                        <input type="password" class="form-control" id="password" name="password" required autocomplete="off">
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -166,185 +402,94 @@
     </div>
 </div>
 
-<!-- 비밀번호 해제 모달 -->
+<!-- 비밀번호 해제 확인 모달 -->
 <div class="modal fade" id="removePasswordModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">비밀번호 해제</h5>
+                <h5 class="modal-title">비밀번호 해제 확인</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <p>정말로 이 프로젝트의 비밀번호를 해제하시겠습니까?</p>
+                <p>정말로 "{{ project.name }}" 프로젝트의 비밀번호를 해제하시겠습니까?</p>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
-                <form action="{{ url_for('toggle_password', encrypted_id=project.encrypted_id) }}" method="POST">
-                    <button type="submit" class="btn btn-danger">해제</button>
+                <form action="{{ url_for('toggle_password', project_id=encrypt_path(project.id|string)) }}" method="POST" class="d-inline">
+                    <button type="submit" class="btn btn-warning">해제</button>
                 </form>
             </div>
         </div>
     </div>
 </div>
 
-<!-- 참여자 추가 모달 -->
-<div class="modal fade" id="addParticipantModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">참여자 추가</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <form action="{{ url_for('add_participant', encrypted_id=project.encrypted_id) }}" method="POST">
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label for="name" class="form-label">이름</label>
-                        <input type="text" class="form-control" id="name" name="name" required>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
-                    <button type="submit" class="btn btn-primary">추가</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 총 금액 입력 필드 (균등 분담)
+    const totalAmountInput = document.getElementById('amount');
+    if (totalAmountInput) {
+        totalAmountInput.addEventListener('keydown', function(e) {
+            if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                e.preventDefault();
+                const currentValue = parseInt(this.value) || 0;
+                const step = parseInt(this.dataset.step) || 1000;
+                
+                if (e.key === 'ArrowUp') {
+                    this.value = currentValue + step;
+                } else {
+                    this.value = Math.max(0, currentValue - step);
+                }
+            }
+        });
+    }
 
-<!-- 참여자 수정/삭제 모달 -->
-{% for participant in participants %}
-<div class="modal fade" id="editParticipantModal{{ participant.id }}" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">참여자 수정</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <form action="{{ url_for('edit_participant', encrypted_id=project.encrypted_id, participant_id=participant.id) }}" method="POST">
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label for="name{{ participant.id }}" class="form-label">이름</label>
-                        <input type="text" class="form-control" id="name{{ participant.id }}" name="name" value="{{ participant.name }}" required>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
-                    <button type="submit" class="btn btn-primary">수정</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
+    // 개별 금액 입력 시 총액 계산
+    const individualAmounts = document.querySelectorAll('.individual-amount');
+    const totalAmountSpan = document.getElementById('total_amount');
+    
+    function updateTotalAmount() {
+        let total = 0;
+        individualAmounts.forEach(input => {
+            total += parseFloat(input.value) || 0;
+        });
+        totalAmountSpan.textContent = total.toLocaleString();
+    }
+    
+    individualAmounts.forEach(input => {
+        input.addEventListener('input', updateTotalAmount);
+        
+        // 화살표로 조절할 때 1000단위로 변경
+        input.addEventListener('keydown', function(e) {
+            if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                e.preventDefault();
+                const currentValue = parseInt(this.value) || 0;
+                const step = parseInt(this.dataset.step) || 1000;
+                
+                if (e.key === 'ArrowUp') {
+                    this.value = currentValue + step;
+                } else {
+                    this.value = Math.max(0, currentValue - step);
+                }
+                
+                updateTotalAmount();
+            }
+        });
+    });
 
-<div class="modal fade" id="deleteParticipantModal{{ participant.id }}" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">참여자 삭제</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <p>정말로 이 참여자를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.</p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
-                <form action="{{ url_for('delete_participant', encrypted_id=project.encrypted_id, participant_id=participant.id) }}" method="POST">
-                    <button type="submit" class="btn btn-danger">삭제</button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-{% endfor %}
-
-<!-- 거래 추가 모달 -->
-<div class="modal fade" id="addTransactionModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">거래 추가</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <form action="{{ url_for('add_transaction', encrypted_id=project.encrypted_id) }}" method="POST">
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label for="category" class="form-label">카테고리</label>
-                        <input type="text" class="form-control" id="category" name="category" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="description" class="form-label">설명</label>
-                        <input type="text" class="form-control" id="description" name="description">
-                    </div>
-                    <div class="mb-3">
-                        <label for="amount" class="form-label">금액</label>
-                        <input type="number" class="form-control" id="amount" name="amount" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">분담 금액</label>
-                        {% for participant in participants %}
-                            <div class="input-group mb-2">
-                                <span class="input-group-text">{{ participant.name }}</span>
-                                <input type="number" class="form-control" name="amounts[]" required>
-                            </div>
-                        {% endfor %}
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
-                    <button type="submit" class="btn btn-primary">추가</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<!-- 거래 수정/삭제 모달 -->
-{% for transaction in transactions %}
-<div class="modal fade" id="editTransactionModal{{ transaction.id }}" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">거래 수정</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <form action="{{ url_for('edit_transaction', encrypted_id=project.encrypted_id, transaction_id=transaction.id) }}" method="POST">
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label for="category{{ transaction.id }}" class="form-label">카테고리</label>
-                        <input type="text" class="form-control" id="category{{ transaction.id }}" name="category" value="{{ transaction.category }}" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="description{{ transaction.id }}" class="form-label">설명</label>
-                        <input type="text" class="form-control" id="description{{ transaction.id }}" name="description" value="{{ transaction.description }}">
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
-                    <button type="submit" class="btn btn-primary">수정</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="deleteTransactionModal{{ transaction.id }}" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">거래 삭제</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <p>정말로 이 거래를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.</p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
-                <form action="{{ url_for('delete_transaction', encrypted_id=project.encrypted_id, transaction_id=transaction.id) }}" method="POST">
-                    <button type="submit" class="btn btn-danger">삭제</button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-{% endfor %}
+    // 참여자 수정 모달
+    const editModal = new bootstrap.Modal(document.getElementById('editParticipantModal'));
+    const editForm = document.getElementById('editParticipantForm');
+    const editNameInput = document.getElementById('editParticipantName');
+    
+    document.querySelectorAll('.edit-participant').forEach(button => {
+        button.addEventListener('click', function() {
+            const id = this.dataset.id;
+            const name = this.dataset.name;
+            editNameInput.value = name;
+            editForm.action = `/project/{{ project.id }}/participant/${id}/edit`;
+            editModal.show();
+        });
+    });
+});
+</script>
 {% endblock %} 
