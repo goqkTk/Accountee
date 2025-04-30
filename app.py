@@ -4,6 +4,8 @@ from datetime import datetime
 import os
 import re
 from werkzeug.security import generate_password_hash, check_password_hash
+from cryptography.fernet import Fernet
+import base64
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', os.urandom(24))
@@ -12,6 +14,24 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SESSION_COOKIE_SECURE'] = True
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 db = SQLAlchemy(app)
+
+# 암호화 키 생성 (실제 운영 환경에서는 환경 변수로 관리해야 함)
+key = Fernet.generate_key()
+cipher_suite = Fernet(key)
+
+def encrypt_id(project_id):
+    """프로젝트 ID를 암호화"""
+    encrypted = cipher_suite.encrypt(str(project_id).encode())
+    return base64.urlsafe_b64encode(encrypted).decode()
+
+def decrypt_id(encrypted_id):
+    """암호화된 프로젝트 ID를 복호화"""
+    try:
+        encrypted = base64.urlsafe_b64decode(encrypted_id.encode())
+        decrypted = cipher_suite.decrypt(encrypted)
+        return int(decrypted.decode())
+    except:
+        return None
 
 # 데이터베이스 모델
 class Project(db.Model):
@@ -101,12 +121,17 @@ def create_project():
             db.session.add(participant)
         db.session.commit()
         
-        return redirect(url_for('project', project_id=project.id))
+        return redirect(url_for('project', encrypted_id=encrypt_id(project.id)))
     
     return render_template('create_project.html')
 
-@app.route('/project/<int:project_id>', methods=['GET', 'POST'])
-def project(project_id):
+@app.route('/project/<encrypted_id>', methods=['GET', 'POST'])
+def project(encrypted_id):
+    project_id = decrypt_id(encrypted_id)
+    if not project_id:
+        flash('잘못된 접근입니다.')
+        return redirect(url_for('index'))
+    
     project = Project.query.get_or_404(project_id)
     
     if project.use_password and request.method == 'POST':
@@ -135,13 +160,13 @@ def add_participant(project_id):
     is_valid, result = validate_name(name)
     if not is_valid:
         flash(result)
-        return redirect(url_for('project', project_id=project_id))
+        return redirect(url_for('project', encrypted_id=encrypt_id(project_id)))
     
     participant = Participant(name=result, project_id=project_id)
     db.session.add(participant)
     db.session.commit()
     flash('참여자가 추가되었습니다!')
-    return redirect(url_for('project', project_id=project_id))
+    return redirect(url_for('project', encrypted_id=encrypt_id(project_id)))
 
 @app.route('/add_transaction/<int:project_id>', methods=['POST'])
 def add_transaction(project_id):
@@ -150,7 +175,7 @@ def add_transaction(project_id):
     
     if not participants:
         flash('거래를 추가하기 전에 먼저 참여자를 추가해주세요.')
-        return redirect(url_for('project', project_id=project_id))
+        return redirect(url_for('project', encrypted_id=encrypt_id(project_id)))
     
     description = request.form.get('description', '')
     category = request.form['category']
@@ -162,7 +187,7 @@ def add_transaction(project_id):
         is_valid, amount = validate_amount(amount_str)
         if not is_valid:
             flash(amount)
-            return redirect(url_for('project', project_id=project_id))
+            return redirect(url_for('project', encrypted_id=encrypt_id(project_id)))
             
         transaction = Transaction(
             amount=amount,
@@ -190,7 +215,7 @@ def add_transaction(project_id):
             is_valid, individual_amount = validate_amount(individual_amount_str)
             if not is_valid:
                 flash(individual_amount)
-                return redirect(url_for('project', project_id=project_id))
+                return redirect(url_for('project', encrypted_id=encrypt_id(project_id)))
             total_amount += individual_amount
         
         # 개별 분담의 경우 총 금액을 개별 금액의 합으로 설정
@@ -209,7 +234,7 @@ def add_transaction(project_id):
             is_valid, individual_amount = validate_amount(individual_amount_str)
             if not is_valid:
                 flash(individual_amount)
-                return redirect(url_for('project', project_id=project_id))
+                return redirect(url_for('project', encrypted_id=encrypt_id(project_id)))
                 
             if individual_amount > 0:
                 share = Share(
@@ -221,7 +246,7 @@ def add_transaction(project_id):
     
     db.session.commit()
     flash('거래가 성공적으로 추가되었습니다!')
-    return redirect(url_for('project', project_id=project_id))
+    return redirect(url_for('project', encrypted_id=encrypt_id(project_id)))
 
 @app.route('/statistics/<int:project_id>')
 def statistics(project_id):
@@ -286,50 +311,62 @@ def participant_statistics(project_id, participant_id):
                          total_amount=total_amount,
                          category_totals=category_totals)
 
-@app.route('/project/<int:project_id>/participant/<int:participant_id>/edit', methods=['POST'])
-def edit_participant(project_id, participant_id):
+@app.route('/project/<encrypted_id>/participant/<int:participant_id>/edit', methods=['POST'])
+def edit_participant(encrypted_id, participant_id):
+    project_id = decrypt_id(encrypted_id)
+    if not project_id:
+        flash('잘못된 접근입니다.')
+        return redirect(url_for('index'))
+    
     participant = Participant.query.get_or_404(participant_id)
     if participant.project_id != project_id:
         flash('잘못된 접근입니다.')
-        return redirect(url_for('project', project_id=project_id))
+        return redirect(url_for('project', encrypted_id=encrypted_id))
     
     new_name = request.form['name']
     if not new_name:
         flash('이름을 입력해주세요.')
-        return redirect(url_for('project', project_id=project_id))
+        return redirect(url_for('project', encrypted_id=encrypted_id))
     
     participant.name = new_name
     db.session.commit()
     flash('인원 이름이 수정되었습니다.')
-    return redirect(url_for('project', project_id=project_id))
+    return redirect(url_for('project', encrypted_id=encrypted_id))
 
-@app.route('/project/<int:project_id>/participant/<int:participant_id>/delete', methods=['POST'])
-def delete_participant(project_id, participant_id):
+@app.route('/project/<encrypted_id>/participant/<int:participant_id>/delete', methods=['POST'])
+def delete_participant(encrypted_id, participant_id):
+    project_id = decrypt_id(encrypted_id)
+    if not project_id:
+        flash('잘못된 접근입니다.')
+        return redirect(url_for('index'))
+    
     participant = Participant.query.get_or_404(participant_id)
     if participant.project_id != project_id:
         flash('잘못된 접근입니다.')
-        return redirect(url_for('project', project_id=project_id))
+        return redirect(url_for('project', encrypted_id=encrypted_id))
     
     # 참여자의 모든 분담 기록 삭제
     Share.query.filter_by(participant_id=participant_id).delete()
     db.session.delete(participant)
     db.session.commit()
     flash('인원이 삭제되었습니다.')
-    return redirect(url_for('project', project_id=project_id))
+    return redirect(url_for('project', encrypted_id=encrypted_id))
 
-@app.route('/project/<int:project_id>/delete', methods=['POST'])
-def delete_project(project_id):
+@app.route('/project/<encrypted_id>/delete', methods=['POST'])
+def delete_project(encrypted_id):
+    project_id = decrypt_id(encrypted_id)
+    if not project_id:
+        flash('잘못된 접근입니다.')
+        return redirect(url_for('index'))
+    
     project = Project.query.get_or_404(project_id)
     
     # 프로젝트와 관련된 모든 데이터 삭제
-    # 먼저 모든 거래의 ID를 가져옴
     transaction_ids = [t.id for t in Transaction.query.filter_by(project_id=project_id).all()]
     
-    # Share 테이블에서 해당 거래들과 관련된 데이터 삭제
     if transaction_ids:
         Share.query.filter(Share.transaction_id.in_(transaction_ids)).delete(synchronize_session=False)
     
-    # 나머지 데이터 삭제
     Transaction.query.filter_by(project_id=project_id).delete()
     Participant.query.filter_by(project_id=project_id).delete()
     
@@ -339,62 +376,81 @@ def delete_project(project_id):
     flash('프로젝트가 삭제되었습니다.')
     return redirect(url_for('index'))
 
-@app.route('/project/<int:project_id>/edit', methods=['POST'])
-def edit_project(project_id):
+@app.route('/project/<encrypted_id>/edit', methods=['POST'])
+def edit_project(encrypted_id):
+    project_id = decrypt_id(encrypted_id)
+    if not project_id:
+        flash('잘못된 접근입니다.')
+        return redirect(url_for('index'))
+    
     project = Project.query.get_or_404(project_id)
     new_name = request.form['name']
     
     if not new_name:
         flash('프로젝트 이름을 입력해주세요.')
-        return redirect(url_for('project', project_id=project_id))
+        return redirect(url_for('project', encrypted_id=encrypted_id))
     
     if Project.query.filter(Project.name == new_name, Project.id != project_id).first():
         flash('이미 존재하는 프로젝트 이름입니다.')
-        return redirect(url_for('project', project_id=project_id))
+        return redirect(url_for('project', encrypted_id=encrypted_id))
     
     project.name = new_name
     db.session.commit()
     flash('프로젝트 이름이 변경되었습니다.')
-    return redirect(url_for('project', project_id=project_id))
+    return redirect(url_for('project', encrypted_id=encrypted_id))
 
-@app.route('/project/<int:project_id>/transaction/<int:transaction_id>/edit', methods=['POST'])
-def edit_transaction(project_id, transaction_id):
+@app.route('/project/<encrypted_id>/transaction/<int:transaction_id>/edit', methods=['POST'])
+def edit_transaction(encrypted_id, transaction_id):
+    project_id = decrypt_id(encrypted_id)
+    if not project_id:
+        flash('잘못된 접근입니다.')
+        return redirect(url_for('index'))
+    
     transaction = Transaction.query.get_or_404(transaction_id)
     if transaction.project_id != project_id:
         flash('잘못된 접근입니다.')
-        return redirect(url_for('project', project_id=project_id))
+        return redirect(url_for('project', encrypted_id=encrypted_id))
     
     category = request.form.get('category')
     description = request.form.get('description', '')
     
     if not category:
         flash('카테고리는 필수 입력 항목입니다.')
-        return redirect(url_for('project', project_id=project_id))
+        return redirect(url_for('project', encrypted_id=encrypted_id))
     
     transaction.category = category
     transaction.description = description
     
     db.session.commit()
     flash('지출이 수정되었습니다.')
-    return redirect(url_for('project', project_id=project_id))
+    return redirect(url_for('project', encrypted_id=encrypted_id))
 
-@app.route('/project/<int:project_id>/transaction/<int:transaction_id>/delete', methods=['POST'])
-def delete_transaction(project_id, transaction_id):
+@app.route('/project/<encrypted_id>/transaction/<int:transaction_id>/delete', methods=['POST'])
+def delete_transaction(encrypted_id, transaction_id):
+    project_id = decrypt_id(encrypted_id)
+    if not project_id:
+        flash('잘못된 접근입니다.')
+        return redirect(url_for('index'))
+    
     transaction = Transaction.query.get_or_404(transaction_id)
     if transaction.project_id != project_id:
         flash('잘못된 접근입니다.')
-        return redirect(url_for('project', project_id=project_id))
+        return redirect(url_for('project', encrypted_id=encrypted_id))
     
-    # Share 테이블의 관련 항목도 함께 삭제
     Share.query.filter_by(transaction_id=transaction_id).delete()
     db.session.delete(transaction)
     db.session.commit()
     
     flash('지출이 삭제되었습니다.')
-    return redirect(url_for('project', project_id=project_id))
+    return redirect(url_for('project', encrypted_id=encrypted_id))
 
-@app.route('/project/<int:project_id>/toggle_password', methods=['POST'])
-def toggle_password(project_id):
+@app.route('/project/<encrypted_id>/toggle_password', methods=['POST'])
+def toggle_password(encrypted_id):
+    project_id = decrypt_id(encrypted_id)
+    if not project_id:
+        flash('잘못된 접근입니다.')
+        return redirect(url_for('index'))
+    
     project = Project.query.get_or_404(project_id)
     
     if project.use_password:
@@ -407,14 +463,14 @@ def toggle_password(project_id):
         password = request.form.get('password')
         if not password:
             flash('비밀번호를 입력해주세요.')
-            return redirect(url_for('project', project_id=project_id))
+            return redirect(url_for('project', encrypted_id=encrypted_id))
         
         project.use_password = True
         project.password = generate_password_hash(password)
         flash('프로젝트 비밀번호가 설정되었습니다.')
     
     db.session.commit()
-    return redirect(url_for('project', project_id=project_id))
+    return redirect(url_for('project', encrypted_id=encrypted_id))
 
 if __name__ == '__main__':
     with app.app_context():
