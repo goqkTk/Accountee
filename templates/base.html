@@ -149,6 +149,11 @@
             white-space: nowrap;
         }
 
+        .input-group .btn {
+            padding: 0.375rem 0.75rem;
+            white-space: nowrap;
+        }
+
         .participant-item {
             display: flex;
             justify-content: space-between;
@@ -167,23 +172,16 @@
             white-space: nowrap;
         }
 
-        .input-group {
-            display: flex;
-            gap: 0.5rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .input-group .form-control {
-            flex: 1;
-        }
-
-        .input-group .btn {
-            padding: 0.375rem 0.75rem;
-            font-size: 0.875rem;
-            white-space: nowrap;
-        }
-
         @media (max-width: 768px) {
+            .input-group .btn {
+                padding: 0.375rem 0.75rem;
+                font-size: 0.875rem;
+            }
+
+            .input-group .btn i {
+                font-size: 0.875rem;
+            }
+
             .participant-form {
                 flex-direction: column;
             }
@@ -213,21 +211,6 @@
                 padding: 0.375rem 0.875rem;
                 font-size: 0.875rem;
                 min-width: 70px;
-            }
-
-            .input-group {
-                flex-direction: row;
-                align-items: center;
-            }
-
-            .input-group .form-control {
-                flex: 1;
-            }
-
-            .input-group .btn {
-                padding: 0.375rem 0.5rem;
-                font-size: 0.875rem;
-                min-width: auto;
             }
         }
 
