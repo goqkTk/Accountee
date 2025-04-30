@@ -67,7 +67,6 @@ document.addEventListener('DOMContentLoaded', function() {
         newParticipant.className = 'input-group mb-2';
         newParticipant.innerHTML = `
             <input type="text" class="form-control participant-name" name="participants[]" placeholder="이름" required autocomplete="off" style="flex: 1;">
-            <input type="hidden" name="csrf_token" value="${csrfToken}">
             <button type="button" class="btn btn-outline-danger remove-participant" style="width: 60px;" onmouseup="this.blur()">
                 <span>삭제</span>
             </button>
