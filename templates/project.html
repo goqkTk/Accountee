@@ -11,6 +11,17 @@
                     <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#editProjectModal">
                         <i class="bi bi-pencil"></i> 이름 변경
                     </button>
+                    {% if project.use_password %}
+                    <form action="{{ url_for('toggle_password', project_id=project.id) }}" method="POST" class="d-inline">
+                        <button type="submit" class="btn btn-outline-warning btn-sm">
+                            <i class="bi bi-unlock"></i> 비밀번호 해제
+                        </button>
+                    </form>
+                    {% else %}
+                    <button type="button" class="btn btn-outline-warning btn-sm" data-bs-toggle="modal" data-bs-target="#setPasswordModal">
+                        <i class="bi bi-lock"></i> 비밀번호 설정
+                    </button>
+                    {% endif %}
                     <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteProjectModal1">
                         <i class="bi bi-trash"></i> 삭제
                     </button>
@@ -365,6 +376,30 @@
                     <button type="submit" class="btn btn-danger">최종 삭제</button>
                 </form>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- 비밀번호 설정 모달 -->
+<div class="modal fade" id="setPasswordModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">프로젝트 비밀번호 설정</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{{ url_for('toggle_password', project_id=project.id) }}" method="POST">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="password" class="form-label">비밀번호</label>
+                        <input type="password" class="form-control" id="password" name="password" required autocomplete="off">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                    <button type="submit" class="btn btn-primary">설정</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>

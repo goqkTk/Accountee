@@ -395,6 +395,29 @@ def delete_transaction(project_id, transaction_id):
     flash('지출이 삭제되었습니다.')
     return redirect(url_for('project', project_id=project_id))
 
+@app.route('/project/<int:project_id>/toggle_password', methods=['POST'])
+def toggle_password(project_id):
+    project = Project.query.get_or_404(project_id)
+    
+    if project.use_password:
+        # 비밀번호 해제
+        project.use_password = False
+        project.password = None
+        flash('프로젝트 비밀번호가 해제되었습니다.')
+    else:
+        # 비밀번호 설정
+        password = request.form.get('password')
+        if not password:
+            flash('비밀번호를 입력해주세요.')
+            return redirect(url_for('project', project_id=project_id))
+        
+        project.use_password = True
+        project.password = generate_password_hash(password)
+        flash('프로젝트 비밀번호가 설정되었습니다.')
+    
+    db.session.commit()
+    return redirect(url_for('project', project_id=project_id))
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
