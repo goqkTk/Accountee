@@ -265,11 +265,14 @@
     </style>
 </head>
 <body>
-    <div class="container mt-4">
+    <div class="container">
         {% with messages = get_flashed_messages() %}
             {% if messages %}
                 {% for message in messages %}
-                    <div class="alert alert-info">{{ message }}</div>
+                    <div class="alert alert-info alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
                 {% endfor %}
             {% endif %}
         {% endwith %}
