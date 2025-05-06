@@ -146,14 +146,10 @@ def add_participant(project_id):
 @app.route('/add_transaction/<int:project_id>', methods=['POST'])
 def add_transaction(project_id):
     try:
-        print(f"=== 거래 추가 시작: project_id={project_id} ===")
-        print(f"Form data: {request.form}")
-        
         project = Project.query.get_or_404(project_id)
         participants = Participant.query.filter_by(project_id=project_id).all()
         
         if not participants:
-            print("참여자가 없음")
             flash('거래를 추가하기 전에 먼저 참여자를 추가해주세요.')
             return redirect(url_for('project', project_id=project_id))
         
@@ -161,32 +157,24 @@ def add_transaction(project_id):
         category = request.form.get('category')
         split_type = request.form.get('split_type', 'equal')
         
-        print(f"분담 유형: {split_type}")
-        print(f"카테고리: {category}")
-        
         if not category:
-            print("카테고리 누락")
             flash('카테고리를 선택해주세요.')
             return redirect(url_for('project', project_id=project_id))
         
         if split_type == 'equal':
             # 균등 분담
             amount_str = request.form.get('amount', '')
-            print(f"균등분담 금액: {amount_str}")
             
             if not amount_str:
-                print("금액 누락")
                 flash('금액을 입력해주세요.')
                 return redirect(url_for('project', project_id=project_id))
                 
             is_valid, amount = validate_amount(amount_str)
             if not is_valid:
-                print(f"금액 유효성 검사 실패: {amount}")
                 flash(amount)
                 return redirect(url_for('project', project_id=project_id))
                 
             if amount <= 0:
-                print("금액이 0 이하")
                 flash('금액은 0보다 커야 합니다.')
                 return redirect(url_for('project', project_id=project_id))
                 
@@ -198,7 +186,6 @@ def add_transaction(project_id):
             )
             db.session.add(transaction)
             db.session.commit()
-            print(f"거래 생성 완료: id={transaction.id}")
             
             # 균등 분담 처리
             share_amount = amount / len(participants)
@@ -209,7 +196,6 @@ def add_transaction(project_id):
                     participant_id=participant.id
                 )
                 db.session.add(share)
-                print(f"분담 생성: participant_id={participant.id}, amount={share_amount}")
         else:
             # 개별 분담
             total_amount = 0
@@ -218,7 +204,6 @@ def add_transaction(project_id):
             
             for participant in participants:
                 individual_amount_str = request.form.get(f'individual_amount_{participant.id}', '0')
-                print(f"개별분담 금액 (participant_id={participant.id}): {individual_amount_str}")
                 
                 try:
                     individual_amount = float(individual_amount_str)
@@ -227,14 +212,10 @@ def add_transaction(project_id):
                         total_amount += individual_amount
                         valid_amounts.append((participant.id, individual_amount))
                 except ValueError:
-                    print(f"잘못된 금액 형식: {individual_amount_str}")
                     flash('올바른 금액을 입력해주세요.')
                     return redirect(url_for('project', project_id=project_id))
             
-            print(f"총 금액: {total_amount}, 금액 입력 여부: {has_amount}")
-            
             if not has_amount or total_amount <= 0:
-                print("유효한 금액 없음")
                 flash('최소 한 명 이상의 금액을 입력해주세요.')
                 return redirect(url_for('project', project_id=project_id))
             
@@ -247,7 +228,6 @@ def add_transaction(project_id):
             )
             db.session.add(transaction)
             db.session.commit()
-            print(f"거래 생성 완료: id={transaction.id}")
             
             # 개별 분담 처리 - 금액이 0보다 큰 참여자만 처리
             for participant_id, amount in valid_amounts:
@@ -257,18 +237,13 @@ def add_transaction(project_id):
                     participant_id=participant_id
                 )
                 db.session.add(share)
-                print(f"분담 생성: participant_id={participant_id}, amount={amount}")
         
         db.session.commit()
-        print("=== 거래 추가 완료 ===")
         flash('거래가 성공적으로 추가되었습니다!')
         return redirect(url_for('project', project_id=project_id))
         
     except Exception as e:
         db.session.rollback()
-        print(f"=== 오류 발생: {str(e)} ===")
-        import traceback
-        print(traceback.format_exc())
         flash('거래 추가 중 오류가 발생했습니다. 다시 시도해주세요.')
         return redirect(url_for('project', project_id=project_id))
 
