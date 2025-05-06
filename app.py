@@ -69,8 +69,23 @@ def index():
 
 @app.route('/project/<int:project_id>', methods=['GET', 'POST'])
 def project(project_id):
-    project = Project.query.get_or_404(project_id)
-    return render_template('project.html', project=project)
+    try:
+        project = Project.query.get_or_404(project_id)
+        
+        if project.use_password and not project.password:
+            flash('비밀번호가 설정되지 않았습니다.', 'error')
+            return redirect(url_for('index'))
+            
+        if project.use_password and request.method == 'POST':
+            password = request.form.get('password')
+            if not password or not check_password_hash(project.password, password):
+                flash('잘못된 비밀번호입니다.', 'error')
+                return redirect(url_for('project', project_id=project.id))
+                
+        return render_template('project.html', project=project)
+    except Exception as e:
+        flash('프로젝트를 불러오는 중 오류가 발생했습니다.', 'error')
+        return redirect(url_for('index'))
 
 @app.route('/project/<int:project_id>/edit', methods=['POST'])
 def edit_project(project_id):
@@ -90,18 +105,27 @@ def delete_project(project_id):
 
 @app.route('/project/<int:project_id>/toggle_password', methods=['POST'])
 def toggle_password(project_id):
-    project = Project.query.get_or_404(project_id)
-    if project.password:
-        project.password = None
-        flash('비밀번호가 해제되었습니다.', 'success')
-    else:
-        password = request.form.get('password')
-        if not password:
-            flash('비밀번호를 입력해주세요.', 'error')
-            return redirect(url_for('project', project_id=project.id))
-        project.password = password
-        flash('비밀번호가 설정되었습니다.', 'success')
-    db.session.commit()
+    try:
+        project = Project.query.get_or_404(project_id)
+        if project.password:
+            project.password = None
+            project.use_password = False
+            flash('비밀번호가 해제되었습니다.', 'success')
+        else:
+            password = request.form.get('password')
+            if not password:
+                flash('비밀번호를 입력해주세요.', 'error')
+                return redirect(url_for('project', project_id=project.id))
+            if len(password) < 4:
+                flash('비밀번호는 4자 이상이어야 합니다.', 'error')
+                return redirect(url_for('project', project_id=project.id))
+            project.password = generate_password_hash(password)
+            project.use_password = True
+            flash('비밀번호가 설정되었습니다.', 'success')
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        flash('비밀번호 설정 중 오류가 발생했습니다.', 'error')
     return redirect(url_for('project', project_id=project.id))
 
 @app.route('/project/<int:project_id>/add_participant', methods=['POST'])
