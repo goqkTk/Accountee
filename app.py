@@ -67,7 +67,7 @@ def index():
     projects = Project.query.order_by(Project.created_at.desc()).all()
     return render_template('index.html', projects=projects)
 
-@app.route('/project/<int:project_id>', methods=['GET'])
+@app.route('/project/<int:project_id>', methods=['GET', 'POST'])
 def project(project_id):
     project = Project.query.get_or_404(project_id)
     return render_template('project.html', project=project)
