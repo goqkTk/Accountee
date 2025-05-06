@@ -104,23 +104,13 @@
                                 <div class="mb-3">
                                     <label class="form-label">개별 금액 입력</label>
                                     {% for participant in participants %}
-                                    <div class="row mb-2">
-                                        <div class="col-md-6">
-                                            <div class="input-group">
-                                                <span class="input-group-text">{{ participant.name }}</span>
-                                                <input type="tel" class="form-control individual-amount" 
-                                                       name="individual_amount_{{ participant.id }}" value="0" required 
-                                                       data-step="1000" step="any" pattern="[0-9]*" inputmode="numeric"
-                                                       oninput="this.value = this.value.replace(/[^0-9]/g, '')"
-                                                       autocomplete="off">
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <input type="text" class="form-control" 
-                                                   name="individual_description_{{ participant.id }}" 
-                                                   placeholder="{{ participant.name }}님의 상세 설명"
-                                                   autocomplete="off">
-                                        </div>
+                                    <div class="input-group mb-2">
+                                        <span class="input-group-text">{{ participant.name }}</span>
+                                        <input type="tel" class="form-control individual-amount" 
+                                               name="individual_amount_{{ participant.id }}" value="0" required 
+                                               data-step="1000" step="any" pattern="[0-9]*" inputmode="numeric"
+                                               oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+                                               autocomplete="off">
                                     </div>
                                     {% endfor %}
                                 </div>
