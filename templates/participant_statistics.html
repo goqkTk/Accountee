@@ -406,18 +406,16 @@
                             </thead>
                             <tbody>
                                 {% for transaction in transactions %}
-                                <tr>
+                                <tr class="clickable-row" data-bs-toggle="modal" data-bs-target="#transactionModal{{ transaction.id }}">
                                     <td>{{ transaction.date.strftime('%Y-%m-%d %H:%M') }}</td>
                                     <td>{{ transaction.category }}</td>
                                     <td>{{ transaction.description }}</td>
-                                    <td>
-                                        {% for share in transaction.shares %}
-                                            {% if share.participant_id == participant.id %}
-                                                {{ "{:,}".format(share.amount|round|int) }}원
-                                            {% endif %}
-                                        {% endfor %}
-                                    </td>
-                                    <td class="text-muted">{{ "{:,}".format(transaction.amount|round|int) }}원</td>
+                                    <td>{{ "{:,}".format(share.amount|round|int) }}원</td>
+                                    {% if share.description %}
+                                    <td>{{ share.description }}</td>
+                                    {% else %}
+                                    <td>-</td>
+                                    {% endif %}
                                 </tr>
                                 {% endfor %}
                             </tbody>
@@ -425,23 +423,17 @@
                     </div>
                     <div class="transaction-list">
                         {% for transaction in transactions %}
-                        <div class="transaction-card">
-                            <div class="date">{{ transaction.date.strftime('%Y-%m-%d %H:%M') }}</div>
-                            <div class="main-info">
-                                <span class="category">{{ transaction.category }}</span>
-                                <span class="amount">
-                                    {% for share in transaction.shares %}
-                                        {% if share.participant_id == participant.id %}
-                                            {{ "{:,}".format(share.amount|round|int) }}원
-                                        {% endif %}
-                                    {% endfor %}
-                                </span>
-                            </div>
-                            {% if transaction.description %}
-                            <div class="description">{{ transaction.description }}</div>
-                            {% endif %}
-                            <div class="per-person">
-                                거래 총액: {{ "{:,}".format(transaction.amount|round|int) }}원
+                        <div class="mobile-card clickable-card" data-bs-toggle="modal" data-bs-target="#transactionModal{{ transaction.id }}">
+                            <div class="card-body">
+                                <div class="card-title">{{ transaction.category }}</div>
+                                <div class="card-text">{{ transaction.date.strftime('%Y-%m-%d %H:%M') }}</div>
+                                <div class="card-text">{{ "{:,}".format(share.amount|round|int) }}원</div>
+                                {% if transaction.description %}
+                                <div class="card-text">{{ transaction.description }}</div>
+                                {% endif %}
+                                {% if share.description %}
+                                <div class="card-text text-muted">{{ share.description }}</div>
+                                {% endif %}
                             </div>
                         </div>
                         {% endfor %}

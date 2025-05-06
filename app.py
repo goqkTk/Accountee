@@ -41,6 +41,7 @@ class Transaction(db.Model):
 class Share(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     amount = db.Column(db.Float, nullable=False)
+    description = db.Column(db.String(200))
     transaction_id = db.Column(db.Integer, db.ForeignKey('transaction.id'), nullable=False)
     participant_id = db.Column(db.Integer, db.ForeignKey('participant.id'), nullable=False)
 
@@ -178,6 +179,7 @@ def add_transaction(project_id):
         for participant in participants:
             share = Share(
                 amount=share_amount,
+                description=description,
                 transaction_id=transaction.id,
                 participant_id=participant.id
             )
@@ -206,18 +208,16 @@ def add_transaction(project_id):
         # 개별 분담 처리
         for participant in participants:
             individual_amount_str = request.form.get(f'individual_amount_{participant.id}', '0')
-            is_valid, individual_amount = validate_amount(individual_amount_str)
-            if not is_valid:
-                flash(individual_amount)
-                return redirect(url_for('project', project_id=project_id))
-                
-            if individual_amount > 0:
-                share = Share(
-                    amount=individual_amount,
-                    transaction_id=transaction.id,
-                    participant_id=participant.id
-                )
-                db.session.add(share)
+            individual_description = request.form.get(f'individual_description_{participant.id}', '')
+            individual_amount = float(individual_amount_str)
+            
+            share = Share(
+                amount=individual_amount,
+                description=individual_description,  # 개별 설명 저장
+                transaction_id=transaction.id,
+                participant_id=participant.id
+            )
+            db.session.add(share)
     
     db.session.commit()
     flash('거래가 성공적으로 추가되었습니다!')
