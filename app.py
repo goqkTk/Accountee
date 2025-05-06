@@ -12,7 +12,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SESSION_COOKIE_SECURE'] = True
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 db = SQLAlchemy(app)
-
+#이건 ㄹㅇ 돼야됨
 # 데이터베이스 모델
 class Project(db.Model):
     id = db.Column(db.Integer, primary_key=True)
