@@ -429,6 +429,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // 균등분담 폼 제출 전 유효성 검사
     document.getElementById('equalForm').addEventListener('submit', function(e) {
         const amount = document.getElementById('amount').value;
+        console.log('균등분담 폼 제출:', {
+            amount: amount,
+            category: document.getElementById('category').value,
+            description: document.getElementById('description').value
+        });
+        
         if (!amount || isNaN(amount) || parseInt(amount) <= 0) {
             e.preventDefault();
             alert('유효한 금액을 입력해주세요.');
@@ -441,13 +447,23 @@ document.addEventListener('DOMContentLoaded', function() {
         const individualAmounts = document.querySelectorAll('.individual-amount');
         let total = 0;
         let hasAmount = false;
+        const amounts = {};
 
         individualAmounts.forEach(input => {
             const amount = parseInt(input.value) || 0;
+            amounts[input.name] = amount;
             if (amount > 0) {
                 hasAmount = true;
             }
             total += amount;
+        });
+
+        console.log('개별분담 폼 제출:', {
+            amounts: amounts,
+            total: total,
+            hasAmount: hasAmount,
+            category: document.getElementById('category_individual').value,
+            description: document.getElementById('description_individual').value
         });
 
         if (!hasAmount || total <= 0) {
@@ -463,7 +479,8 @@ document.addEventListener('DOMContentLoaded', function() {
         let total = 0;
         
         individualAmounts.forEach(input => {
-            total += parseInt(input.value) || 0;
+            const amount = parseInt(input.value) || 0;
+            total += amount;
         });
         
         document.getElementById('total_amount').textContent = total.toLocaleString();
@@ -486,6 +503,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (this.classList.contains('individual-amount')) {
                     updateTotalAmount();
                 }
+            }
+        });
+
+        // 입력값 변경 시 유효성 검사
+        input.addEventListener('input', function() {
+            const value = this.value;
+            if (value && !/^\d*$/.test(value)) {
+                this.value = value.replace(/[^\d]/g, '');
+            }
+            if (this.classList.contains('individual-amount')) {
+                updateTotalAmount();
             }
         });
     });

@@ -12,7 +12,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SESSION_COOKIE_SECURE'] = True
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 db = SQLAlchemy(app)
-#이건 ㄹㅇ 돼야됨
+
 # 데이터베이스 모델
 class Project(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -145,35 +145,48 @@ def add_participant(project_id):
 
 @app.route('/add_transaction/<int:project_id>', methods=['POST'])
 def add_transaction(project_id):
-    project = Project.query.get_or_404(project_id)
-    participants = Participant.query.filter_by(project_id=project_id).all()
-    
-    if not participants:
-        flash('거래를 추가하기 전에 먼저 참여자를 추가해주세요.')
-        return redirect(url_for('project', project_id=project_id))
-    
-    description = request.form.get('description', '')
-    category = request.form.get('category')
-    split_type = request.form.get('split_type', 'equal')
-    
-    if not category:
-        flash('카테고리를 선택해주세요.')
-        return redirect(url_for('project', project_id=project_id))
-    
     try:
+        print(f"=== 거래 추가 시작: project_id={project_id} ===")
+        print(f"Form data: {request.form}")
+        
+        project = Project.query.get_or_404(project_id)
+        participants = Participant.query.filter_by(project_id=project_id).all()
+        
+        if not participants:
+            print("참여자가 없음")
+            flash('거래를 추가하기 전에 먼저 참여자를 추가해주세요.')
+            return redirect(url_for('project', project_id=project_id))
+        
+        description = request.form.get('description', '')
+        category = request.form.get('category')
+        split_type = request.form.get('split_type', 'equal')
+        
+        print(f"분담 유형: {split_type}")
+        print(f"카테고리: {category}")
+        
+        if not category:
+            print("카테고리 누락")
+            flash('카테고리를 선택해주세요.')
+            return redirect(url_for('project', project_id=project_id))
+        
         if split_type == 'equal':
             # 균등 분담
             amount_str = request.form.get('amount', '')
+            print(f"균등분담 금액: {amount_str}")
+            
             if not amount_str:
+                print("금액 누락")
                 flash('금액을 입력해주세요.')
                 return redirect(url_for('project', project_id=project_id))
                 
             is_valid, amount = validate_amount(amount_str)
             if not is_valid:
+                print(f"금액 유효성 검사 실패: {amount}")
                 flash(amount)
                 return redirect(url_for('project', project_id=project_id))
                 
             if amount <= 0:
+                print("금액이 0 이하")
                 flash('금액은 0보다 커야 합니다.')
                 return redirect(url_for('project', project_id=project_id))
                 
@@ -185,6 +198,7 @@ def add_transaction(project_id):
             )
             db.session.add(transaction)
             db.session.commit()
+            print(f"거래 생성 완료: id={transaction.id}")
             
             # 균등 분담 처리
             share_amount = amount / len(participants)
@@ -195,6 +209,7 @@ def add_transaction(project_id):
                     participant_id=participant.id
                 )
                 db.session.add(share)
+                print(f"분담 생성: participant_id={participant.id}, amount={share_amount}")
         else:
             # 개별 분담
             total_amount = 0
@@ -202,8 +217,11 @@ def add_transaction(project_id):
             
             for participant in participants:
                 individual_amount_str = request.form.get(f'individual_amount_{participant.id}', '0')
+                print(f"개별분담 금액 (participant_id={participant.id}): {individual_amount_str}")
+                
                 is_valid, individual_amount = validate_amount(individual_amount_str)
                 if not is_valid:
+                    print(f"개별 금액 유효성 검사 실패: {individual_amount}")
                     flash(individual_amount)
                     return redirect(url_for('project', project_id=project_id))
                     
@@ -211,7 +229,10 @@ def add_transaction(project_id):
                     has_amount = True
                 total_amount += individual_amount
             
+            print(f"총 금액: {total_amount}, 금액 입력 여부: {has_amount}")
+            
             if not has_amount or total_amount <= 0:
+                print("유효한 금액 없음")
                 flash('최소 한 명 이상의 금액을 입력해주세요.')
                 return redirect(url_for('project', project_id=project_id))
             
@@ -224,12 +245,14 @@ def add_transaction(project_id):
             )
             db.session.add(transaction)
             db.session.commit()
+            print(f"거래 생성 완료: id={transaction.id}")
             
             # 개별 분담 처리
             for participant in participants:
                 individual_amount_str = request.form.get(f'individual_amount_{participant.id}', '0')
                 is_valid, individual_amount = validate_amount(individual_amount_str)
                 if not is_valid:
+                    print(f"개별 금액 유효성 검사 실패: {individual_amount}")
                     flash(individual_amount)
                     return redirect(url_for('project', project_id=project_id))
                     
@@ -240,13 +263,18 @@ def add_transaction(project_id):
                         participant_id=participant.id
                     )
                     db.session.add(share)
+                    print(f"분담 생성: participant_id={participant.id}, amount={individual_amount}")
         
         db.session.commit()
+        print("=== 거래 추가 완료 ===")
         flash('거래가 성공적으로 추가되었습니다!')
         return redirect(url_for('project', project_id=project_id))
         
     except Exception as e:
         db.session.rollback()
+        print(f"=== 오류 발생: {str(e)} ===")
+        import traceback
+        print(traceback.format_exc())
         flash('거래 추가 중 오류가 발생했습니다. 다시 시도해주세요.')
         return redirect(url_for('project', project_id=project_id))
 
