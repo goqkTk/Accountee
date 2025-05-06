@@ -185,15 +185,23 @@ def add_transaction(project_id):
     else:
         # 개별 분담
         total_amount = 0
+        individual_amounts = {}
+        
+        # 먼저 모든 금액을 검증
         for participant in participants:
             individual_amount_str = request.form.get(f'individual_amount_{participant.id}', '0')
             is_valid, individual_amount = validate_amount(individual_amount_str)
             if not is_valid:
                 flash(individual_amount)
                 return redirect(url_for('project', project_id=project_id))
+            individual_amounts[participant.id] = individual_amount
             total_amount += individual_amount
         
-        # 개별 분담의 경우 총 금액을 개별 금액의 합으로 설정
+        if total_amount <= 0:
+            flash('최소 한 명 이상의 금액을 입력해주세요.')
+            return redirect(url_for('project', project_id=project_id))
+        
+        # 거래 생성
         transaction = Transaction(
             amount=total_amount,
             description=description,
@@ -201,26 +209,26 @@ def add_transaction(project_id):
             project_id=project_id
         )
         db.session.add(transaction)
-        db.session.commit()
+        db.session.flush()  # transaction.id를 얻기 위해 flush
         
         # 개별 분담 처리
-        for participant in participants:
-            individual_amount_str = request.form.get(f'individual_amount_{participant.id}', '0')
-            is_valid, individual_amount = validate_amount(individual_amount_str)
-            if not is_valid:
-                flash(individual_amount)
-                return redirect(url_for('project', project_id=project_id))
-                
-            if individual_amount > 0:
+        for participant_id, amount in individual_amounts.items():
+            if amount > 0:
                 share = Share(
-                    amount=individual_amount,
+                    amount=amount,
                     transaction_id=transaction.id,
-                    participant_id=participant.id
+                    participant_id=participant_id
                 )
                 db.session.add(share)
+        
+        try:
+            db.session.commit()
+            flash('거래가 성공적으로 추가되었습니다!')
+        except Exception as e:
+            db.session.rollback()
+            flash('거래 추가 중 오류가 발생했습니다.')
+            print(f"Error adding transaction: {str(e)}")
     
-    db.session.commit()
-    flash('거래가 성공적으로 추가되었습니다!')
     return redirect(url_for('project', project_id=project_id))
 
 @app.route('/statistics/<int:project_id>')
