@@ -83,11 +83,12 @@ def project(project_id):
                 if not check_password_hash(project.password, password):
                     flash('잘못된 비밀번호입니다.', 'error')
                     return render_template('project.html', project=project, show_password_form=True)
-                
-                return render_template('project.html', project=project)
-            else:
+            
+            # GET 요청이거나 비밀번호가 맞지 않은 경우
+            if request.method == 'GET' or not check_password_hash(project.password, request.form.get('password', '')):
                 return render_template('project.html', project=project, show_password_form=True)
         
+        # 비밀번호가 필요없거나 비밀번호가 맞은 경우
         return render_template('project.html', project=project)
     except Exception as e:
         flash('프로젝트를 불러오는 중 오류가 발생했습니다.', 'error')
