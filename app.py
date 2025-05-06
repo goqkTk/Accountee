@@ -147,7 +147,11 @@ def add_participant(project_id):
 def add_transaction(project_id):
     try:
         project = Project.query.get_or_404(project_id)
-        participants = Participant.query.filter_by(project_id=project_id).all()
+        participants = Participant.query.filter_by(project_id=project_id).order_by(Participant.id).all()
+        
+        print(f"Found {len(participants)} participants for project {project_id}")
+        for p in participants:
+            print(f"Participant: id={p.id}, name={p.name}")
         
         if not participants:
             flash('거래를 추가하기 전에 먼저 참여자를 추가해주세요.')
@@ -158,6 +162,7 @@ def add_transaction(project_id):
         split_type = request.form.get('split_type', 'equal')
         
         print(f"Processing transaction: project_id={project_id}, category={category}, split_type={split_type}")
+        print(f"Form data: {request.form}")
         
         if split_type == 'equal':
             # 균등 분담
@@ -194,7 +199,7 @@ def add_transaction(project_id):
             # 먼저 모든 금액을 검증
             for participant in participants:
                 individual_amount_str = request.form.get(f'individual_amount_{participant.id}', '0')
-                print(f"Participant {participant.id}: amount_str={individual_amount_str}")
+                print(f"Participant {participant.id} ({participant.name}): amount_str={individual_amount_str}")
                 is_valid, individual_amount = validate_amount(individual_amount_str)
                 if not is_valid:
                     flash(individual_amount)
