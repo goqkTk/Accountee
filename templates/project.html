@@ -54,13 +54,14 @@
                     <div class="tab-content" id="splitTypeTabContent">
                         <!-- 균등 분담 탭 -->
                         <div class="tab-pane fade show active" id="equal" role="tabpanel">
-                            <form action="{{ url_for('add_transaction', project_id=project.id) }}" method="POST">
+                            <form action="{{ url_for('add_transaction', project_id=project.id) }}" method="POST" id="equalForm">
                                 <input type="hidden" name="split_type" value="equal">
                                 <div class="row">
                                     <div class="col-md-4 mb-3">
                                         <label for="amount" class="form-label">총 금액</label>
                                         <input type="tel" class="form-control" id="amount" name="amount" required 
                                                data-step="1000" step="any" pattern="[0-9]*" inputmode="numeric"
+                                               oninput="this.value = this.value.replace(/[^0-9]/g, '')"
                                                autocomplete="off">
                                     </div>
                                     <div class="col-md-4 mb-3">
@@ -77,13 +78,13 @@
                                         <input type="text" class="form-control" id="description" name="description" autocomplete="off">
                                     </div>
                                 </div>
-                                <button type="submit" class="btn btn-primary">추가</button>
+                                <button type="submit" class="btn btn-primary" id="equalSubmit">추가</button>
                             </form>
                         </div>
 
                         <!-- 개별 분담 탭 -->
                         <div class="tab-pane fade" id="individual" role="tabpanel">
-                            <form action="{{ url_for('add_transaction', project_id=project.id) }}" method="POST">
+                            <form action="{{ url_for('add_transaction', project_id=project.id) }}" method="POST" id="individualForm">
                                 <input type="hidden" name="split_type" value="individual">
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
@@ -109,7 +110,7 @@
                                         <input type="tel" class="form-control individual-amount" 
                                                name="individual_amount_{{ participant.id }}" value="0" required 
                                                data-step="1000" step="any" pattern="[0-9]*" inputmode="numeric"
-                                               oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+                                               oninput="this.value = this.value.replace(/[^0-9]/g, ''); updateTotalAmount();"
                                                autocomplete="off">
                                     </div>
                                     {% endfor %}
@@ -119,7 +120,7 @@
                                     총 금액: <span id="total_amount">0</span>원
                                 </div>
 
-                                <button type="submit" class="btn btn-primary">추가</button>
+                                <button type="submit" class="btn btn-primary" id="individualSubmit">추가</button>
                             </form>
                         </div>
                     </div>
@@ -425,40 +426,51 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // 총 금액 입력 필드 (균등 분담)
-    const totalAmountInput = document.getElementById('amount');
-    if (totalAmountInput) {
-        totalAmountInput.addEventListener('keydown', function(e) {
-            if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-                e.preventDefault();
-                const currentValue = parseInt(this.value) || 0;
-                const step = parseInt(this.dataset.step) || 1000;
-                
-                if (e.key === 'ArrowUp') {
-                    this.value = currentValue + step;
-                } else {
-                    this.value = Math.max(0, currentValue - step);
-                }
+    // 균등분담 폼 제출 전 유효성 검사
+    document.getElementById('equalForm').addEventListener('submit', function(e) {
+        const amount = document.getElementById('amount').value;
+        if (!amount || isNaN(amount) || parseInt(amount) <= 0) {
+            e.preventDefault();
+            alert('유효한 금액을 입력해주세요.');
+            return false;
+        }
+    });
+
+    // 개별분담 폼 제출 전 유효성 검사
+    document.getElementById('individualForm').addEventListener('submit', function(e) {
+        const individualAmounts = document.querySelectorAll('.individual-amount');
+        let total = 0;
+        let hasAmount = false;
+
+        individualAmounts.forEach(input => {
+            const amount = parseInt(input.value) || 0;
+            if (amount > 0) {
+                hasAmount = true;
             }
+            total += amount;
         });
-    }
+
+        if (!hasAmount || total <= 0) {
+            e.preventDefault();
+            alert('최소 한 명 이상의 금액을 입력해주세요.');
+            return false;
+        }
+    });
 
     // 개별 금액 입력 시 총액 계산
-    const individualAmounts = document.querySelectorAll('.individual-amount');
-    const totalAmountSpan = document.getElementById('total_amount');
-    
     function updateTotalAmount() {
+        const individualAmounts = document.querySelectorAll('.individual-amount');
         let total = 0;
-        individualAmounts.forEach(input => {
-            total += parseFloat(input.value) || 0;
-        });
-        totalAmountSpan.textContent = total.toLocaleString();
-    }
-    
-    individualAmounts.forEach(input => {
-        input.addEventListener('input', updateTotalAmount);
         
-        // 화살표로 조절할 때 1000단위로 변경
+        individualAmounts.forEach(input => {
+            total += parseInt(input.value) || 0;
+        });
+        
+        document.getElementById('total_amount').textContent = total.toLocaleString();
+    }
+
+    // 화살표 키로 금액 조절
+    document.querySelectorAll('input[type="tel"]').forEach(input => {
         input.addEventListener('keydown', function(e) {
             if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
                 e.preventDefault();
@@ -471,7 +483,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     this.value = Math.max(0, currentValue - step);
                 }
                 
-                updateTotalAmount();
+                if (this.classList.contains('individual-amount')) {
+                    updateTotalAmount();
+                }
             }
         });
     });

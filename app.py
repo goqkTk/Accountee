@@ -153,75 +153,102 @@ def add_transaction(project_id):
         return redirect(url_for('project', project_id=project_id))
     
     description = request.form.get('description', '')
-    category = request.form['category']
+    category = request.form.get('category')
     split_type = request.form.get('split_type', 'equal')
     
-    if split_type == 'equal':
-        # 균등 분담
-        amount_str = request.form['amount']
-        is_valid, amount = validate_amount(amount_str)
-        if not is_valid:
-            flash(amount)
-            return redirect(url_for('project', project_id=project_id))
-            
-        transaction = Transaction(
-            amount=amount,
-            description=description,
-            category=category,
-            project_id=project_id
-        )
-        db.session.add(transaction)
-        db.session.commit()
-        
-        # 균등 분담 처리
-        share_amount = amount / len(participants)
-        for participant in participants:
-            share = Share(
-                amount=share_amount,
-                transaction_id=transaction.id,
-                participant_id=participant.id
-            )
-            db.session.add(share)
-    else:
-        # 개별 분담
-        total_amount = 0
-        for participant in participants:
-            individual_amount_str = request.form.get(f'individual_amount_{participant.id}', '0')
-            is_valid, individual_amount = validate_amount(individual_amount_str)
-            if not is_valid:
-                flash(individual_amount)
-                return redirect(url_for('project', project_id=project_id))
-            total_amount += individual_amount
-        
-        # 개별 분담의 경우 총 금액을 개별 금액의 합으로 설정
-        transaction = Transaction(
-            amount=total_amount,
-            description=description,
-            category=category,
-            project_id=project_id
-        )
-        db.session.add(transaction)
-        db.session.commit()
-        
-        # 개별 분담 처리
-        for participant in participants:
-            individual_amount_str = request.form.get(f'individual_amount_{participant.id}', '0')
-            is_valid, individual_amount = validate_amount(individual_amount_str)
-            if not is_valid:
-                flash(individual_amount)
+    if not category:
+        flash('카테고리를 선택해주세요.')
+        return redirect(url_for('project', project_id=project_id))
+    
+    try:
+        if split_type == 'equal':
+            # 균등 분담
+            amount_str = request.form.get('amount', '')
+            if not amount_str:
+                flash('금액을 입력해주세요.')
                 return redirect(url_for('project', project_id=project_id))
                 
-            if individual_amount > 0:
+            is_valid, amount = validate_amount(amount_str)
+            if not is_valid:
+                flash(amount)
+                return redirect(url_for('project', project_id=project_id))
+                
+            if amount <= 0:
+                flash('금액은 0보다 커야 합니다.')
+                return redirect(url_for('project', project_id=project_id))
+                
+            transaction = Transaction(
+                amount=amount,
+                description=description,
+                category=category,
+                project_id=project_id
+            )
+            db.session.add(transaction)
+            db.session.commit()
+            
+            # 균등 분담 처리
+            share_amount = amount / len(participants)
+            for participant in participants:
                 share = Share(
-                    amount=individual_amount,
+                    amount=share_amount,
                     transaction_id=transaction.id,
                     participant_id=participant.id
                 )
                 db.session.add(share)
-    
-    db.session.commit()
-    flash('거래가 성공적으로 추가되었습니다!')
-    return redirect(url_for('project', project_id=project_id))
+        else:
+            # 개별 분담
+            total_amount = 0
+            has_amount = False
+            
+            for participant in participants:
+                individual_amount_str = request.form.get(f'individual_amount_{participant.id}', '0')
+                is_valid, individual_amount = validate_amount(individual_amount_str)
+                if not is_valid:
+                    flash(individual_amount)
+                    return redirect(url_for('project', project_id=project_id))
+                    
+                if individual_amount > 0:
+                    has_amount = True
+                total_amount += individual_amount
+            
+            if not has_amount or total_amount <= 0:
+                flash('최소 한 명 이상의 금액을 입력해주세요.')
+                return redirect(url_for('project', project_id=project_id))
+            
+            # 개별 분담의 경우 총 금액을 개별 금액의 합으로 설정
+            transaction = Transaction(
+                amount=total_amount,
+                description=description,
+                category=category,
+                project_id=project_id
+            )
+            db.session.add(transaction)
+            db.session.commit()
+            
+            # 개별 분담 처리
+            for participant in participants:
+                individual_amount_str = request.form.get(f'individual_amount_{participant.id}', '0')
+                is_valid, individual_amount = validate_amount(individual_amount_str)
+                if not is_valid:
+                    flash(individual_amount)
+                    return redirect(url_for('project', project_id=project_id))
+                    
+                if individual_amount > 0:
+                    share = Share(
+                        amount=individual_amount,
+                        transaction_id=transaction.id,
+                        participant_id=participant.id
+                    )
+                    db.session.add(share)
+        
+        db.session.commit()
+        flash('거래가 성공적으로 추가되었습니다!')
+        return redirect(url_for('project', project_id=project_id))
+        
+    except Exception as e:
+        db.session.rollback()
+        flash('거래 추가 중 오류가 발생했습니다. 다시 시도해주세요.')
+        return redirect(url_for('project', project_id=project_id))
 
 @app.route('/statistics/<int:project_id>')
 def statistics(project_id):
