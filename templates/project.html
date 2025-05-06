@@ -8,7 +8,6 @@
                 <div class="project-title">
                     <h2>{{ project.name }}</h2>
                 </div>
-                {% if not show_password_form %}
                 <div class="d-flex gap-2 mb-3">
                     <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#editProjectModal">
                         <i class="bi bi-pencil"></i> 이름 변경
@@ -30,29 +29,10 @@
                     <a href="{{ url_for('statistics', project_id=project.id) }}" class="btn btn-outline-info">통계 보기</a>
                     <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">목록으로</a>
                 </div>
-                {% endif %}
             </div>
         </div>
     </div>
 
-    {% if show_password_form %}
-    <div class="row">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title">비밀번호 입력</h5>
-                    <form method="POST">
-                        <div class="mb-3">
-                            <label for="password" class="form-label">비밀번호</label>
-                            <input type="password" class="form-control" id="password" name="password" required>
-                        </div>
-                        <button type="submit" class="btn btn-primary">확인</button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-    {% else %}
     <!-- 지출 추가 폼 -->
     <div class="row mb-4">
         <div class="col-12">
@@ -216,8 +196,7 @@
             <div class="card">
                 <div class="card-body">
                     <h5 class="card-title">인원 관리</h5>
-                    <form action="add_participant" method="POST" class="participant-form">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <form action="{{ url_for('add_participant', project_id=project.id) }}" method="POST" class="participant-form">
                         <input type="text" class="form-control" name="name" placeholder="이름" required autocomplete="off">
                         <button type="submit" class="btn btn-primary">추가</button>
                     </form>
@@ -230,8 +209,8 @@
                                         data-id="{{ participant.id }}" data-name="{{ participant.name }}">
                                     수정
                                 </button>
-                                <form action="participant/{{ participant.id }}/delete" method="POST" class="d-inline">
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <form action="{{ url_for('delete_participant', project_id=project.id, participant_id=participant.id) }}" 
+                                      method="POST" class="d-inline">
                                     <button type="submit" class="btn btn-sm btn-outline-danger" 
                                             onclick="return confirm('정말 삭제하시겠습니까?')">
                                         삭제
@@ -255,8 +234,7 @@
                     <h5 class="modal-title">지출 수정</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <form action="transaction/{{ transaction.id }}/edit" method="POST">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <form action="{{ url_for('edit_transaction', project_id=project.id, transaction_id=transaction.id) }}" method="POST">
                     <div class="modal-body">
                         <div class="mb-3">
                             <label for="edit_category{{ transaction.id }}" class="form-label">카테고리</label>
@@ -287,9 +265,8 @@
     </div>
     <!-- 거래 삭제 폼 -->
     <form id="deleteForm{{ transaction.id }}" 
-          action="transaction/{{ transaction.id }}/delete" 
+          action="{{ url_for('delete_transaction', project_id=project.id, transaction_id=transaction.id) }}" 
           method="POST" style="display: none;">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     </form>
     {% endfor %}
 </div>
@@ -323,8 +300,7 @@
                 <h5 class="modal-title">프로젝트 이름 변경</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form action="edit" method="POST">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <form action="{{ url_for('edit_project', project_id=project.id) }}" method="POST">
                 <div class="modal-body">
                     <div class="mb-3">
                         <label for="project_name" class="form-label">새 프로젝트 이름</label>
@@ -394,8 +370,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
-                <form action="delete" method="POST">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <form action="{{ url_for('delete_project', project_id=project.id) }}" method="POST">
                     <button type="submit" class="btn btn-danger">최종 삭제</button>
                 </form>
             </div>
@@ -411,8 +386,7 @@
                 <h5 class="modal-title">프로젝트 비밀번호 설정</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form action="toggle_password" method="POST">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <form action="{{ url_for('toggle_password', project_id=project.id) }}" method="POST">
                 <div class="modal-body">
                     <div class="mb-3">
                         <label for="password" class="form-label">비밀번호</label>
@@ -441,8 +415,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
-                <form action="toggle_password" method="POST" class="d-inline">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <form action="{{ url_for('toggle_password', project_id=project.id) }}" method="POST" class="d-inline">
                     <button type="submit" class="btn btn-warning">해제</button>
                 </form>
             </div>
