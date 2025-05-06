@@ -8,6 +8,7 @@
                 <div class="project-title">
                     <h2>{{ project.name }}</h2>
                 </div>
+                {% if not show_password_form %}
                 <div class="d-flex gap-2 mb-3">
                     <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#editProjectModal">
                         <i class="bi bi-pencil"></i> 이름 변경
@@ -29,10 +30,29 @@
                     <a href="{{ url_for('statistics', project_id=project.id) }}" class="btn btn-outline-info">통계 보기</a>
                     <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">목록으로</a>
                 </div>
+                {% endif %}
             </div>
         </div>
     </div>
 
+    {% if show_password_form %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">비밀번호 입력</h5>
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label for="password" class="form-label">비밀번호</label>
+                            <input type="password" class="form-control" id="password" name="password" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">확인</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
     <!-- 지출 추가 폼 -->
     <div class="row mb-4">
         <div class="col-12">

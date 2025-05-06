@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, session
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 import os
@@ -72,16 +72,22 @@ def project(project_id):
     try:
         project = Project.query.get_or_404(project_id)
         
-        if project.use_password and not project.password:
-            flash('비밀번호가 설정되지 않았습니다.', 'error')
-            return redirect(url_for('index'))
-            
-        if project.use_password and request.method == 'POST':
-            password = request.form.get('password')
-            if not password or not check_password_hash(project.password, password):
-                flash('잘못된 비밀번호입니다.', 'error')
-                return redirect(url_for('project', project_id=project.id))
+        # 비밀번호가 필요한 경우
+        if project.use_password:
+            if request.method == 'POST':
+                password = request.form.get('password')
+                if not password:
+                    flash('비밀번호를 입력해주세요.', 'error')
+                    return render_template('project.html', project=project, show_password_form=True)
                 
+                if not check_password_hash(project.password, password):
+                    flash('잘못된 비밀번호입니다.', 'error')
+                    return render_template('project.html', project=project, show_password_form=True)
+                
+                return render_template('project.html', project=project)
+            else:
+                return render_template('project.html', project=project, show_password_form=True)
+        
         return render_template('project.html', project=project)
     except Exception as e:
         flash('프로젝트를 불러오는 중 오류가 발생했습니다.', 'error')
@@ -256,6 +262,14 @@ def participant_statistics(project_id, participant_id):
                          transactions=transactions,
                          total_amount=total_amount,
                          category_totals=category_totals)
+
+@app.route('/project/<int:project_id>/logout', methods=['POST'])
+def logout_project(project_id):
+    authenticated_projects = session.get('authenticated_projects', [])
+    if project_id in authenticated_projects:
+        authenticated_projects.remove(project_id)
+        session['authenticated_projects'] = authenticated_projects
+    return redirect(url_for('project', project_id=project_id))
 
 if __name__ == '__main__':
     with app.app_context():
