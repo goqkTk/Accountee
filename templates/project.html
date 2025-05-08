@@ -540,22 +540,40 @@ document.addEventListener('DOMContentLoaded', function() {
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
 <script>
     // Socket.IO 연결
-    const socket = io();
+    const socket = io({
+        transports: ['websocket'],
+        upgrade: false
+    });
     const projectId = "{{ project.id }}";
 
-    // 프로젝트 룸 참가
-    socket.emit('join_project', { project_id: projectId });
+    // 연결 상태 모니터링
+    socket.on('connect', () => {
+        console.log('Socket.IO 연결됨');
+        // 프로젝트 룸 참가
+        socket.emit('join_project', { project_id: projectId });
+        console.log('프로젝트 룸 참가 요청:', projectId);
+    });
+
+    socket.on('connect_error', (error) => {
+        console.error('Socket.IO 연결 오류:', error);
+    });
+
+    socket.on('disconnect', () => {
+        console.log('Socket.IO 연결 끊김');
+    });
 
     // 거래 추가 이벤트 수신
     socket.on('transaction_added', function(data) {
+        console.log('거래 추가 이벤트 수신:', data);
         if (data.project_id === projectId) {
-            // 페이지 새로고침
+            console.log('페이지 새로고침 실행');
             location.reload();
         }
     });
 
     // 참여자 추가 이벤트 수신
     socket.on('participant_added', function(data) {
+        console.log('참여자 추가 이벤트 수신:', data);
         if (data.project_id === projectId) {
             location.reload();
         }
@@ -563,6 +581,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 참여자 수정 이벤트 수신
     socket.on('participant_updated', function(data) {
+        console.log('참여자 수정 이벤트 수신:', data);
         if (data.project_id === projectId) {
             location.reload();
         }
@@ -570,6 +589,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 참여자 삭제 이벤트 수신
     socket.on('participant_deleted', function(data) {
+        console.log('참여자 삭제 이벤트 수신:', data);
         if (data.project_id === projectId) {
             location.reload();
         }
@@ -577,6 +597,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 거래 수정 이벤트 수신
     socket.on('transaction_updated', function(data) {
+        console.log('거래 수정 이벤트 수신:', data);
         if (data.project_id === projectId) {
             location.reload();
         }
@@ -584,6 +605,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 거래 삭제 이벤트 수신
     socket.on('transaction_deleted', function(data) {
+        console.log('거래 삭제 이벤트 수신:', data);
         if (data.project_id === projectId) {
             location.reload();
         }
@@ -591,6 +613,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 프로젝트 정보 수정 이벤트 수신
     socket.on('project_updated', function(data) {
+        console.log('프로젝트 정보 수정 이벤트 수신:', data);
         if (data.project_id === projectId) {
             location.reload();
         }

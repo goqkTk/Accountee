@@ -513,25 +513,28 @@ def toggle_password(project_id):
 
 @socketio.on('connect')
 def handle_connect():
-    print('Client connected')
+    print('클라이언트 연결됨')
 
 @socketio.on('disconnect')
 def handle_disconnect():
-    print('Client disconnected')
+    print('클라이언트 연결 끊김')
 
 @socketio.on('join_project')
 def handle_join_project(data):
     project_id = data.get('project_id')
     if project_id:
+        print(f'클라이언트가 프로젝트 {project_id} 룸에 참가')
         socketio.join_room(f'project_{project_id}')
 
 @socketio.on('leave_project')
 def handle_leave_project(data):
     project_id = data.get('project_id')
     if project_id:
+        print(f'클라이언트가 프로젝트 {project_id} 룸에서 나감')
         socketio.leave_room(f'project_{project_id}')
 
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-    socketio.run(app, debug=True)
+    print('서버 시작됨 - Socket.IO 모드')
+    socketio.run(app, debug=True, host='0.0.0.0', port=5000)
