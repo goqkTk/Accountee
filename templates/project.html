@@ -534,4 +534,66 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+<script>
+    // Socket.IO 연결
+    const socket = io();
+    const projectId = "{{ project.id }}";
+
+    // 프로젝트 룸 참가
+    socket.emit('join_project', { project_id: projectId });
+
+    // 거래 추가 이벤트 수신
+    socket.on('transaction_added', function(data) {
+        if (data.project_id === projectId) {
+            // 페이지 새로고침
+            location.reload();
+        }
+    });
+
+    // 참여자 추가 이벤트 수신
+    socket.on('participant_added', function(data) {
+        if (data.project_id === projectId) {
+            location.reload();
+        }
+    });
+
+    // 참여자 수정 이벤트 수신
+    socket.on('participant_updated', function(data) {
+        if (data.project_id === projectId) {
+            location.reload();
+        }
+    });
+
+    // 참여자 삭제 이벤트 수신
+    socket.on('participant_deleted', function(data) {
+        if (data.project_id === projectId) {
+            location.reload();
+        }
+    });
+
+    // 거래 수정 이벤트 수신
+    socket.on('transaction_updated', function(data) {
+        if (data.project_id === projectId) {
+            location.reload();
+        }
+    });
+
+    // 거래 삭제 이벤트 수신
+    socket.on('transaction_deleted', function(data) {
+        if (data.project_id === projectId) {
+            location.reload();
+        }
+    });
+
+    // 프로젝트 정보 수정 이벤트 수신
+    socket.on('project_updated', function(data) {
+        if (data.project_id === projectId) {
+            location.reload();
+        }
+    });
+</script>
 {% endblock %} 
