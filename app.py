@@ -1,14 +1,9 @@
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
-from flask_socketio import SocketIO, emit, join_room, leave_room
 from datetime import datetime
 import os
 import re
 from werkzeug.security import generate_password_hash, check_password_hash
-import eventlet
-
-# eventlet 모드 활성화
-eventlet.monkey_patch()
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', os.urandom(24))
@@ -17,7 +12,6 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SESSION_COOKIE_SECURE'] = True
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 db = SQLAlchemy(app)
-socketio = SocketIO(app, cors_allowed_origins=["http://accountee.kro.kr", "https://accountee.kro.kr"], async_mode='eventlet')
 
 # 데이터베이스 모델
 class Project(db.Model):
@@ -146,16 +140,6 @@ def add_participant(project_id):
     participant = Participant(name=result, project_id=project_id)
     db.session.add(participant)
     db.session.commit()
-    
-    # Socket.IO 이벤트 발생
-    socketio.emit('participant_added', {
-        'project_id': project_id,
-        'participant': {
-            'id': participant.id,
-            'name': participant.name
-        }
-    }, room=f'project_{project_id}')
-    
     flash('참여자가 추가되었습니다!')
     return redirect(url_for('project', project_id=project_id))
 
@@ -255,19 +239,6 @@ def add_transaction(project_id):
                 db.session.add(share)
         
         db.session.commit()
-        
-        # Socket.IO 이벤트 발생
-        socketio.emit('transaction_added', {
-            'project_id': project_id,
-            'transaction': {
-                'id': transaction.id,
-                'amount': transaction.amount,
-                'description': transaction.description,
-                'category': transaction.category,
-                'date': transaction.date.isoformat()
-            }
-        }, room=f'project_{project_id}')
-        
         flash('거래가 성공적으로 추가되었습니다!')
         return redirect(url_for('project', project_id=project_id))
         
@@ -342,40 +313,32 @@ def participant_statistics(project_id, participant_id):
 @app.route('/project/<int:project_id>/participant/<int:participant_id>/edit', methods=['POST'])
 def edit_participant(project_id, participant_id):
     participant = Participant.query.get_or_404(participant_id)
-    name = request.form['name']
-    is_valid, result = validate_name(name)
-    if not is_valid:
-        flash(result)
+    if participant.project_id != project_id:
+        flash('잘못된 접근입니다.')
         return redirect(url_for('project', project_id=project_id))
     
-    participant.name = result
+    new_name = request.form['name']
+    if not new_name:
+        flash('이름을 입력해주세요.')
+        return redirect(url_for('project', project_id=project_id))
+    
+    participant.name = new_name
     db.session.commit()
-    
-    # Socket.IO 이벤트 발생
-    socketio.emit('participant_updated', {
-        'project_id': project_id,
-        'participant': {
-            'id': participant.id,
-            'name': participant.name
-        }
-    }, room=f'project_{project_id}')
-    
-    flash('참여자 정보가 수정되었습니다!')
+    flash('인원 이름이 수정되었습니다.')
     return redirect(url_for('project', project_id=project_id))
 
 @app.route('/project/<int:project_id>/participant/<int:participant_id>/delete', methods=['POST'])
 def delete_participant(project_id, participant_id):
     participant = Participant.query.get_or_404(participant_id)
+    if participant.project_id != project_id:
+        flash('잘못된 접근입니다.')
+        return redirect(url_for('project', project_id=project_id))
+    
+    # 참여자의 모든 분담 기록 삭제
+    Share.query.filter_by(participant_id=participant_id).delete()
     db.session.delete(participant)
     db.session.commit()
-    
-    # Socket.IO 이벤트 발생
-    socketio.emit('participant_deleted', {
-        'project_id': project_id,
-        'participant_id': participant_id
-    }, room=f'project_{project_id}')
-    
-    flash('참여자가 삭제되었습니다!')
+    flash('인원이 삭제되었습니다.')
     return redirect(url_for('project', project_id=project_id))
 
 @app.route('/project/<int:project_id>/delete', methods=['POST'])
@@ -409,24 +372,13 @@ def edit_project(project_id):
         flash('프로젝트 이름을 입력해주세요.')
         return redirect(url_for('project', project_id=project_id))
     
-    if new_name != project.name and Project.query.filter_by(name=new_name).first():
+    if Project.query.filter(Project.name == new_name, Project.id != project_id).first():
         flash('이미 존재하는 프로젝트 이름입니다.')
         return redirect(url_for('project', project_id=project_id))
     
     project.name = new_name
     db.session.commit()
-    
-    # Socket.IO 이벤트 발생
-    socketio.emit('project_updated', {
-        'project_id': project_id,
-        'project': {
-            'id': project.id,
-            'name': project.name,
-            'use_password': project.use_password
-        }
-    }, room=f'project_{project_id}')
-    
-    flash('프로젝트 정보가 수정되었습니다!')
+    flash('프로젝트 이름이 변경되었습니다.')
     return redirect(url_for('project', project_id=project_id))
 
 @app.route('/project/<int:project_id>/transaction/<int:transaction_id>/edit', methods=['POST'])
@@ -436,30 +388,18 @@ def edit_transaction(project_id, transaction_id):
         flash('잘못된 접근입니다.')
         return redirect(url_for('project', project_id=project_id))
     
-    description = request.form.get('description', '')
     category = request.form.get('category')
+    description = request.form.get('description', '')
     
     if not category:
-        flash('카테고리를 선택해주세요.')
+        flash('카테고리는 필수 입력 항목입니다.')
         return redirect(url_for('project', project_id=project_id))
     
-    transaction.description = description
     transaction.category = category
+    transaction.description = description
+    
     db.session.commit()
-    
-    # Socket.IO 이벤트 발생
-    socketio.emit('transaction_updated', {
-        'project_id': project_id,
-        'transaction': {
-            'id': transaction.id,
-            'amount': transaction.amount,
-            'description': transaction.description,
-            'category': transaction.category,
-            'date': transaction.date.isoformat()
-        }
-    }, room=f'project_{project_id}')
-    
-    flash('거래 정보가 수정되었습니다!')
+    flash('지출이 수정되었습니다.')
     return redirect(url_for('project', project_id=project_id))
 
 @app.route('/project/<int:project_id>/transaction/<int:transaction_id>/delete', methods=['POST'])
@@ -469,77 +409,38 @@ def delete_transaction(project_id, transaction_id):
         flash('잘못된 접근입니다.')
         return redirect(url_for('project', project_id=project_id))
     
-    # 거래의 모든 분담 기록 삭제
+    # Share 테이블의 관련 항목도 함께 삭제
     Share.query.filter_by(transaction_id=transaction_id).delete()
     db.session.delete(transaction)
     db.session.commit()
     
-    # Socket.IO 이벤트 발생
-    socketio.emit('transaction_deleted', {
-        'project_id': project_id,
-        'transaction_id': transaction_id
-    }, room=f'project_{project_id}')
-    
-    flash('거래가 삭제되었습니다!')
+    flash('지출이 삭제되었습니다.')
     return redirect(url_for('project', project_id=project_id))
 
 @app.route('/project/<int:project_id>/toggle_password', methods=['POST'])
 def toggle_password(project_id):
     project = Project.query.get_or_404(project_id)
-    password = request.form.get('password', '')
     
     if project.use_password:
         # 비밀번호 해제
-        project.password = None
         project.use_password = False
+        project.password = None
+        flash('프로젝트 비밀번호가 해제되었습니다.')
     else:
         # 비밀번호 설정
+        password = request.form.get('password')
         if not password:
             flash('비밀번호를 입력해주세요.')
             return redirect(url_for('project', project_id=project_id))
-        project.password = generate_password_hash(password)
+        
         project.use_password = True
+        project.password = generate_password_hash(password)
+        flash('프로젝트 비밀번호가 설정되었습니다.')
     
     db.session.commit()
-    
-    # Socket.IO 이벤트 발생
-    socketio.emit('project_updated', {
-        'project_id': project_id,
-        'project': {
-            'id': project.id,
-            'name': project.name,
-            'use_password': project.use_password
-        }
-    }, room=f'project_{project_id}')
-    
-    flash('프로젝트 비밀번호 설정이 변경되었습니다!')
     return redirect(url_for('project', project_id=project_id))
-
-@socketio.on('connect')
-def handle_connect():
-    print('Client connected')
-
-@socketio.on('disconnect')
-def handle_disconnect():
-    print('Client disconnected')
-
-@socketio.on('join_project')
-def handle_join_project(data):
-    project_id = data.get('project_id')
-    if project_id:
-        room = f'project_{project_id}'
-        join_room(room)
-        print(f'Client joined room: {room}')
-
-@socketio.on('leave_project')
-def handle_leave_project(data):
-    project_id = data.get('project_id')
-    if project_id:
-        room = f'project_{project_id}'
-        leave_room(room)
-        print(f'Client left room: {room}')
 
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-    socketio.run(app, debug=True, host='0.0.0.0', port=8000, allow_unsafe_werkzeug=True)
+    app.run(host='0.0.0.0', port=5000, debug=False)
