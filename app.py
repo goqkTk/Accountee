@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
-from flask_socketio import SocketIO, emit
+from flask_socketio import SocketIO, emit, join_room, leave_room
 from datetime import datetime
 import os
 import re
@@ -523,15 +523,19 @@ def handle_disconnect():
 def handle_join_project(data):
     project_id = data.get('project_id')
     if project_id:
-        socketio.join_room(f'project_{project_id}')
+        room = f'project_{project_id}'
+        join_room(room)
+        print(f'Client joined room: {room}')
 
 @socketio.on('leave_project')
 def handle_leave_project(data):
     project_id = data.get('project_id')
     if project_id:
-        socketio.leave_room(f'project_{project_id}')
+        room = f'project_{project_id}'
+        leave_room(room)
+        print(f'Client left room: {room}')
 
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-    socketio.run(app, debug=True)
+    socketio.run(app, debug=True, host='0.0.0.0', port=8000, allow_unsafe_werkzeug=True)
