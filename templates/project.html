@@ -542,8 +542,11 @@ document.addEventListener('DOMContentLoaded', function() {
 document.addEventListener('DOMContentLoaded', function() {
     // Socket.IO 연결
     const socket = io({
-        transports: ['polling'],
-        upgrade: false
+        transports: ['websocket', 'polling'],
+        upgrade: true,
+        reconnection: true,
+        reconnectionAttempts: 5,
+        reconnectionDelay: 1000
     });
     const projectId = "{{ project.id }}";
 

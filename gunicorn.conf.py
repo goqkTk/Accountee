@@ -7,7 +7,8 @@ load_dotenv()
 # Gunicorn 설정
 bind = "0.0.0.0:5000"
 workers = 4
-worker_class = "sync"
+worker_class = "eventlet"
+worker_connections = 1000
 timeout = 120
 accesslog = "-"
 errorlog = "-"
