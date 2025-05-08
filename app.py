@@ -5,6 +5,10 @@ from datetime import datetime
 import os
 import re
 from werkzeug.security import generate_password_hash, check_password_hash
+import eventlet
+
+# eventlet 모드 활성화
+eventlet.monkey_patch()
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', os.urandom(24))

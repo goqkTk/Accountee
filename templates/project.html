@@ -542,8 +542,8 @@ document.addEventListener('DOMContentLoaded', function() {
 document.addEventListener('DOMContentLoaded', function() {
     // Socket.IO 연결
     const socket = io({
-        transports: ['websocket', 'polling'],
-        upgrade: true,
+        transports: ['polling'],
+        upgrade: false,
         reconnection: true,
         reconnectionAttempts: 5,
         reconnectionDelay: 1000

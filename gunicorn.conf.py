@@ -10,6 +10,7 @@ workers = 4
 worker_class = "eventlet"
 worker_connections = 1000
 timeout = 120
+keepalive = 5
 accesslog = "-"
 errorlog = "-"
 loglevel = "info" 
